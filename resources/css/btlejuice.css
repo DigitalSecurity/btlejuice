@@ -1,0 +1,26 @@
+div.event-connect {
+  text-align: center;
+  background-color: #8cbd79;
+  font-size: 10pt;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: solid 1px #eee;
+}
+
+div.event-disconnect {
+  text-align: center;
+  background-color: #dfa0a0;
+  font-size: 10pt;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: solid 1px #eee;
+}
+
+div.transaction {
+  cursor: pointer;
+  background: none;
+}
+
+div.transaction:hover {
+  background: #eee;
+}

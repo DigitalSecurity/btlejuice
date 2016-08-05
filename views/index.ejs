@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+  <head>
+    <title>BtleJuice - Bluetooth Low Energy MitM</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+      div.samesize {
+        margin-bottom:   -99999px;
+        padding-bottom: 99999px;
+      }
+    </style>
+
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/btlejuice.css">
+  </head>
+  <body style="padding-top: 70px" ng-app="BjProxy">
+    <!-- toolbar -->
+    <nav class="navbar navbar-default navbar-fixed-top" ng-controller="NavCtrl">
+      <div class="container-fluid">
+        <span class="navbar-brand">BtleJuice</span>
+        <ul class="nav navbar-nav navbar-right">
+          <li ng-class="{disabled: (config.status == 'disconnected')}" ng-if="intercepting == true" ng-click="onDisableIntercept()"><a href="#" data-toggle="tooltip" data-placement="bottom" title="Stop interception" ng-cloak><i class="fa fa-pause-circle"></i></a></i>
+          <li ng-class="{disabled: (config.status == 'disconnected')}" ng-if="intercepting == false" ng-click="onEnableIntercept()"><a href="#" data-toggle="tooltip" data-placement="bottom" title="Start interception" ng-cloak><i class="fa fa-pause-circle-o"></i></a></i>
+          <!-- <li ng-class="{disabled: (config.status == 'disconnected')}" ng-click="onServices()"><a href="#" data-toggle="tooltip" data-placement="bottom" title="List services and characteristics" ng-cloak><i class="fa fa-cubes"></i></a></li> -->
+          <li ng-if="config.status == 'connected'"><a href="#" data-toggle="tooltip" data-placement="bottom" title="Disconnect device" ng-click="onDisconnect()" ng-cloak><i class="fa fa-bluetooth"></i></a></li>
+          <li ng-if="config.status == 'connecting'"><a href="#" ng-cloak><i class="fa fa-spinner fa-spin"></i></a></li>
+          <li ng-if="config.status == 'disconnected'"><a href="#" ng-click="onSelectTarget()" data-toggle="tooltip" data-placement="bottom" title="Select target device" ng-cloak><i class="fa fa-bluetooth-b"></i></a></li>
+          <li><a href="#" ng-click="onSettings()"><i class="fa fa-cog"></i></a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container-fluid" resize style="position: absolute; top: 50px; left: 0px; width: 100%; padding-left: 0px; padding-right: 0px; margin-right: 0px;">
+      <div>
+        <div class="col-sm-1" style="font-size: 10pt; font-weight: bold; text-align: center; background-color: #eee; border-bottom: solid 1px #888;">Action</div>
+        <div class="col-sm-3" style="font-size: 10pt; font-weight: bold; text-align: center; background-color: #eee; border-bottom: solid 1px #888;">Service</div>
+        <div class="col-sm-3" style="font-size: 10pt; font-weight: bold; text-align: center; background-color: #eee; border-bottom: solid 1px #888;">Characteristic</div>
+        <div class="col-sm-5" style="font-size: 10pt; font-weight: bold; text-align: center; background-color: #eee; border-bottom: solid 1px #888;">Data</div>
+      </div>
+    </div>
+    <div id="transactions" class="container-fluid" style="margin: 0; padding: 0; overflow-y: auto;"   ng-app="BjProxy" ng-controller="TransactionListCtrl">
+      <div class="container-fluid" resize style="overflow-y: auto; padding-left: 0px; padding-right: 0px" ng-style="dimensions">
+        <div ng-repeat="t in transactions" style="overflow: hidden" context-menu="options(t)" class="transaction" ng-cloak>
+          <div ng-if="t.op == 'event' && t.service == 'connect'" class="col-sm-12 event-connect" ng-cloak>Connected</div>
+          <div ng-if="t.op == 'event' && t.service == 'disconnect'" class="col-sm-12 event-disconnect" ng-cloak>Disconnected</div>
+          <div ng-if="t.op != 'event'"   class="col-sm-1 samesize" style="font-size: 10pt; text-align: right; border-bottom: solid 1px #eee;" ng-cloak>{{t.op}}</div>
+          <div ng-if="t.op != 'event'"  class="col-sm-3 samesize" style="font-size: 10pt;border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-cloak>{{t.service | makeUUID}}</div>
+          <div ng-if="t.op != 'event'" class="col-sm-3 samesize" style="font-size: 10pt; border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-cloak>{{t.characteristic | makeUUID}}</div>
+          <div ng-if="t.op != 'event'" class="col-sm-5 samesize" style="font-family: monospace; font-size: 10pt; border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-cloak>{{t.data}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- target selection dialog -->
+    <div class="modal fade" id="m_target" role="dialog" ng-controller="TargetCtrl">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4>Select a target device</h4>
+          </div>
+          <div class="modal-body">
+            <div ng-if="error" class="alert alert-danger">
+              <strong>You must select a target !</strong>
+            </div>
+            <div class="list-group">
+                <a
+                  ng-class="{active: isSelected(target)}"
+                  ng-repeat="target in targets"
+                  ng-click="selectTarget(target)"
+                  class="list-group-item">
+                  <div ng-if="target.name">{{target.name}}</div>
+                  <div style="font-size: 0.8em;">{{target.address}}</div>
+                  <div>{{target.rssi}}dBm</div>
+                </a>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" ng-click="onSelectClick()">Select</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- services dialog -->
+    <div class="modal fade" id="m_profile" role="dialog" ng-controller="ServicesCtrl">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4>Device services and characteristics</h4>
+          </div>
+          <div class="modal-body container-fluid">
+            <form role="form" class="form-horizontal">
+              <label for="service" class="col-sm-2 control-label">Service:</label>
+              <div class="col-sm-10">
+              <select class="form-control" id="service" ng-change="onServiceSelect()" ng-model="selectedService">
+                <option value="{{service}}" ng-repeat="service in services">{{service}}</option>
+              </select>
+              <select ng-if="(selected_service != null)" ng-model="selectedService" ng-change="onServiceSelect" class="form-control" id="service">
+                <option value="{{service}}" ng-repeat="service in services">{{service}}</option>
+              </select>
+            </div>
+            </form>
+            </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" ng-click="onSelectClick()">Select</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Intercept dialog -->
+    <div class="modal" id="m_hook" role="dialog" ng-controller="HookCtrl">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4><i class="fa fa-pencil"></i>&nbsp;{{title}}</h4>
+          </div>
+          <div class="modal-body container-fluid">
+            <div class="row">
+              <div class="col-md-4"><span style="font-weigth: bold"><i class="fa fa-folder"/></i>&nbsp;Service:</span></div>
+              <div class="col-md-8"><span>{{action.service | makeUUID}}</span></div>
+            </div>
+            <div class="row">
+              <div class="col-md-4"><span style="font-weigth: bold"><i class="fa fa-tag"/></i>&nbsp;Characteristic:</span></div>
+              <div class="col-md-8"><span>{{action.characteristic | makeUUID}}</span></div>
+            </div>
+            <div class="row">
+              <div class="col-md-4"><span style="font-weigth: bold"><i class="fa fa-tag"/></i>&nbsp;Data:</span></div>
+              <div class="col-md-8"><input type="text" ng-model="action.dataHexii" class="form-control"/></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" ng-if="action.op == 'notification'" ng-click="onDrop()">Drop</button>
+            <button type="button" class="btn btn-primary" ng-click="onForward()">Forward</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Replay dialog -->
+    <div class="modal" id="m_replay" role="dialog" ng-controller="ReplayCtrl">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4><i class="fa fa-pencil"></i>&nbsp;{{title}}</h4>
+          </div>
+          <div class="modal-body container-fluid">
+            <div class="row">
+              <div class="col-md-4"><span style="font-weigth: bold"><i class="fa fa-folder"/></i>&nbsp;Service:</span></div>
+              <div class="col-md-8"><span>{{service | makeUUID}}</span></div>
+            </div>
+            <div class="row">
+              <div class="col-md-4"><span style="font-weigth: bold"><i class="fa fa-tag"/></i>&nbsp;Characteristic:</span></div>
+              <div class="col-md-8"><span>{{characteristic | makeUUID}}</span></div>
+            </div>
+            <div class="row">
+              <div class="col-md-4"><span style="font-weigth: bold"><i class="fa fa-pencil"/></i>&nbsp;Data:</span></div>
+              <div class="col-md-8"><input type="text" ng-model="dataHexii" class="form-control"/></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" ng-if="op == 'read'" ng-click="onRead()">Read</button>
+            <button type="button" class="btn btn-secondary" ng-if="op == 'write'" ng-click="onWrite()">Write</button>
+            <button type="button" class="btn btn-secondary" ng-if="op == 'notification'" ng-click="onNotify()">Notify</button>
+            <button type="button" class="btn btn-primary" ng-click="onClose()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- settings dialog -->
+    <div class="modal fade" id="m_settings" role="dialog" ng-controller="SettingsCtrl">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4>Settings</h4>
+          </div>
+          <div class="modal-body">
+            <form role="form">
+              <div class="form-froup">
+                <label for="proxy">Proxy:</label>
+                <input type="text" class="form-control" id="proxy" ng-model="config.proxy">
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" ng-click="onCancel()">Cancel</button>
+            <button type="button" class="btn btn-primary" ng-click="onSave()"><i class="fa fa-save"></i>&nbsp;Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/jquery-2.2.3.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/angular.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/webfont.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/managers/interceptor.js"></script>
+    <script src="/js/controllers/contextMenu.js"></script>
+    <script src="/js/controllers/bj.proxy.js"></script>
+  </body>
+</html>
