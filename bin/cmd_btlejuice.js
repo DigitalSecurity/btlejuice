@@ -77,9 +77,11 @@ if (args.port != null) {
 console.log(util.format('[i] Using proxy %s', proxyUrl).bold);
 
 /* Select web UI port */
-console.log(args);
-var uiPort = parseInt(args.web_port);
-
+if (args.web_port != null) {
+    var uiPort = parseInt(args.web_port);
+} else {
+    var uiPort = 8080;
+}
 /* Define bluetooth interface. */
 if (args.iface != null) {
   var iface = parseInt(args.iface);
