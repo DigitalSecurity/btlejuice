@@ -50,6 +50,46 @@ operate simultaneously two bluetooth 4.0+ adapters.
 The use of a virtual machine may help to make this framework work on a single
 computer.
 
+From your virtual machine, install *btlejuice* and make sure your USB BT4 adapter is available from the virtual machine:
+
+```
+$ sudo hciconfig
+hci0:	Type: BR/EDR  Bus: USB
+	BD Address: 10:02:B5:18:07:AD  ACL MTU: 1021:5  SCO MTU: 96:6
+	DOWN
+	RX bytes:1433 acl:0 sco:0 events:171 errors:0
+	TX bytes:30206 acl:0 sco:0 commands:170 errors:0
+```
+
+Also make sure your virtual machine has an IP address reachable from the host.
+
+Launch the proxy in your virtual machine:
+
+```
+btlejuice-proxy
+```
+
+And run the following command on your host machine:
+
+```
+# btlejuice -u <Proxy IP address> -w
+```
+
+The *-w* flag tells BtleJuice to start the web interface while the *-u* option specifies the proxy's IP address.
+
+The Web User Interface is now available at http://localhost:8080. Note the web server port may be changed through command-line.
+
+Installing the bindings
+-----------------------
+
+BtleJuice's Node.js bindings may be installed as well through *npm*:
+
+```
+$ sudo npm install -g btlejuice-bindings
+```
+
+More information about how to use the Node.js bindings in the (package documentation)[https://www.npmjs.com/package/btlejuice-bindings].
+
 License
 -------
 
