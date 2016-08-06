@@ -88,7 +88,7 @@ BtleJuice's Node.js bindings may be installed as well through *npm*:
 $ sudo npm install -g btlejuice-bindings
 ```
 
-More information about how to use the Node.js bindings in the (package documentation)[https://www.npmjs.com/package/btlejuice-bindings].
+More information about how to use the Node.js bindings in the [package documentation](https://www.npmjs.com/package/btlejuice-bindings).
 
 License
 -------
