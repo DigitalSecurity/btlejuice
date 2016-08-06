@@ -80,7 +80,8 @@ App.prototype.createServer = function() {
   /* Basic webserver. */
   if (this.webEnabled) {
     app.set('view engine','ejs');
-    app.use(express.static('resources'))
+    app.set('views', __dirname + '/views');
+    app.use(express.static(__dirname + '/resources'))
       .get('/', function(req, res){
         res.render('index.ejs');
       });
