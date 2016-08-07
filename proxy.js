@@ -322,11 +322,16 @@ Proxy.prototype.connectDevice = function(peripheral) {
 
                       /* Save characteristic. */
                       var device = this.devices[this.currentDevice.address];
+                      var deviceUuid = this.currentDevice.address.split(':').join('').toLowerCase();
                       var _service = device.services[serviceUuid];
                       _service[characs[c].uuid] = {
                         uuid: characs[c].uuid,
                         properties: characs[c].properties,
                         descriptors: [],
+                        /* We read the handles from Noble's internal objects and save them. */
+                        startHandle: noble._bindings._gatts[deviceUuid]._characteristics[serviceUuid][characs[c].uuid].startHandle,
+                        valueHandle: noble._bindings._gatts[deviceUuid]._characteristics[serviceUuid][characs[c].uuid].valueHandle,
+                        endHandle: noble._bindings._gatts[deviceUuid]._characteristics[serviceUuid][characs[c].uuid].endHandle
                       };
                     this.discovered[serviceUuid].done = true;
                       characs[c].discoverDescriptors((function(t, service, charac){
@@ -402,6 +407,9 @@ Proxy.prototype.formatProfile = function() {
       char['uuid'] = _chars[device_char]['uuid'];
       char['properties'] = _chars[device_char]['properties'];
       char['descriptors'] = _chars[device_char]['descriptors'];
+      char['startHandle'] = _chars[device_char]['startHandle'];
+      char['valueHandle'] = _chars[device_char]['valueHandle'];
+      char['endHandle'] = _chars[device_char]['endHandle'];
       service['characteristics'].push(char);
     }
     device_info['services'].push(service);
