@@ -76,8 +76,7 @@ var FakeDevice = function(profile) {
       for (var desc in _service['characteristics'][charac]['descriptors']) {
         service_char_item['descriptors'].push(
           new bleno.Descriptor({
-            uuid: _service['characteristics'][charac]['descriptors'][desc],
-            value: 'notifs'
+            uuid: _service['characteristics'][charac]['descriptors'][desc].uuid
           })
         );
       }
@@ -151,7 +150,12 @@ var FakeDevice = function(profile) {
         //console.log('[setup] services registered'.yellow);
         _this.logger.info('BTLE services registered');
 
+        /* Register services. */
         bleno.setServices(_this.services);
+
+        /* Fix handles. */
+        _this.fixBlenoHandles(profile);
+
       } else {
         //console.log('[setup] error while registering services !'.red);
         _this.logger.error('cannot register services !');
@@ -212,6 +216,109 @@ var FakeDevice = function(profile) {
 };
 
 util.inherits(FakeDevice, events.EventEmitter);
+
+/**
+ * fixBlenoHandles()
+ *
+ * Fix bleno handles in order to avoid Gatt Cache issues.
+ */
+
+FakeDevice.prototype.fixBlenoHandles = function(profile) {
+  var gatt = bleno._bindings._gatt;
+  var services = [];
+
+  /* Target handles array. */
+  var patchedHandles = [];
+
+  /* Find services' start and end handles. */
+  for (var i in profile.services) {
+    var service = profile.services[i];
+
+    /* Find all the handles beloging to service's characteristics. */
+    for (var j in gatt._handles) {
+      var obj = gatt._handles[j];
+      if ((obj.type === 'service') && (obj.uuid === service.uuid)) {
+        /* Keeps start and end handle to find characteristics handles. */
+        var serviceStartHandle = obj.startHandle;
+        var serviceEndHandle = obj.endHandle;
+
+        var realServiceHandle = profile.services[i].startHandle;
+        var realServiceEndHandle = profile.services[i].endHandle;
+
+        /* Register service handle. */
+        patchedHandles[realServiceHandle] = {
+          type: 'service',
+          uuid: service.uuid,
+          attribute: obj.attribute,
+          startHandle: realServiceHandle,
+          endHandle: realServiceEndHandle,
+        };
+
+        /* Register service's characteristics. */
+        for (var k in gatt._handles) {
+          var _obj = gatt._handles[k];
+
+          /* Characteristic belongs to service ? */
+          if ((_obj.type === 'characteristic') &&
+            (_obj.startHandle > serviceStartHandle) &&
+            (_obj.startHandle <= serviceEndHandle)) {
+
+            var characId = null;
+            for (var n in profile.services[i].characteristics) {
+              if (profile.services[i].characteristics[n].uuid == _obj.uuid) {
+                characId = n;
+                break;
+              }
+            }
+
+            var realCharacHandle = profile.services[i].characteristics[characId].startHandle;
+            var realCharacValueHandle = profile.services[i].characteristics[characId].valueHandle;
+
+            /* Save characteristic. */
+            patchedHandles[realCharacHandle] = {
+              type: 'characteristic',
+              uuid: _obj.uuid,
+              properties: _obj.properties,
+              secure: _obj.secure,
+              attribute: _obj.attribute,
+              startHandle: realCharacHandle,
+              valueHandle: realCharacValueHandle,
+            };
+
+            patchedHandles[realCharacValueHandle] = {
+              type: 'characteristicValue',
+              handle: realCharacValueHandle,
+              value: _obj.attribute.value
+            };
+
+            /* Register descriptors if required. */
+            if (_obj.properties & 0x30) {
+              for (var m in gatt._handles) {
+                var __obj = gatt._handles[m];
+                if ((__obj.type === 'descriptor') && (__obj.attribute === _obj.characteristic)) {
+                  var realDescHandle = profile.services[i].characteristics[characId].descriptors[__obj.uuid].handle;
+
+                  patchedHandles[realDescHandle] = {
+                    type: 'descriptor',
+                    handle: realDescHandle,
+                    uuid: '2902',
+                    attribute: __obj.attribute,
+                    properties: __obj.properties,
+                    secure: __obj.secure,
+                    value: __obj.value
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* Update bleno's handles. */
+  bleno._bindings._gatt._handles = patchedHandles;
+}
 
 
 /**

@@ -257,6 +257,7 @@ Proxy.prototype.connectDevice = function(peripheral) {
   this.device.removeAllListeners('connect');
 
   this.device.connect(function(error) {
+
       /* Setup  the disconnect handler. */
       peripheral.removeAllListeners('disconnect');
       peripheral.on('disconnect', function(){
@@ -268,6 +269,8 @@ Proxy.prototype.connectDevice = function(peripheral) {
         this.currentDevice = peripheral;
         this.devices[this.currentDevice.address].connected = true;
         this.devices[this.currentDevice.address].name = peripheral.advertisement.localName;
+        var device = this.devices[this.currentDevice.address];
+        var deviceUuid = this.currentDevice.address.split(':').join('').toLowerCase();
 
         /* Discover services ... */
         this.send('discover_services');
@@ -292,14 +295,6 @@ Proxy.prototype.connectDevice = function(peripheral) {
           if (error == undefined) {
             for (var service in services) {
 
-              /* Excludes service UUIDs 1800 and 1801. */
-              if (services[service].uuid == '1800') {
-                continue;
-              }
-              if (services[service].uuid == '1801') {
-                continue;
-              }
-
               this.services[services[service].uuid] = {};
               this.discovered[services[service].uuid] = {
                 done: false,
@@ -307,7 +302,11 @@ Proxy.prototype.connectDevice = function(peripheral) {
               };
 
               var device = this.devices[this.currentDevice.address];
-              device.services[services[service].uuid] = {};
+              device.services[services[service].uuid] = {
+                startHandle: noble._bindings._gatts[deviceUuid]._services[services[service].uuid].startHandle,
+                endHandle: noble._bindings._gatts[deviceUuid]._services[services[service].uuid].endHandle,
+                characteristics: {}
+              };
 
               /* We are using a closure to keep a copy of the service's uuid. */
               services[service].discoverCharacteristics(null, (function(serviceUuid){
@@ -321,10 +320,8 @@ Proxy.prototype.connectDevice = function(peripheral) {
                       this.discovered[serviceUuid].characteristics[characs[c].uuid] = false;
 
                       /* Save characteristic. */
-                      var device = this.devices[this.currentDevice.address];
-                      var deviceUuid = this.currentDevice.address.split(':').join('').toLowerCase();
                       var _service = device.services[serviceUuid];
-                      _service[characs[c].uuid] = {
+                      _service.characteristics[characs[c].uuid] = {
                         uuid: characs[c].uuid,
                         properties: characs[c].properties,
                         descriptors: [],
@@ -338,9 +335,12 @@ Proxy.prototype.connectDevice = function(peripheral) {
                         return function(error, descriptors) {
                           if (error == undefined) {
                             var device = t.devices[t.currentDevice.address];
-                            var _charac = device.services[service][charac];
+                            var _charac = device.services[service].characteristics[charac];
                             for (var desc in descriptors) {
-                              _charac.descriptors.push(descriptors[desc].uuid);
+                              _charac.descriptors.push({
+                                'uuid': descriptors[desc].uuid,
+                                'handle': noble._bindings._gatts[deviceUuid]._descriptors[service][charac][descriptors[desc].uuid].handle
+                              });
                             }
                             t.onCharacteristicDiscovered(service, charac);
                           } else {
@@ -397,10 +397,12 @@ Proxy.prototype.formatProfile = function() {
   device_info['services'] = [];
   device_info['address'] = this.target;
   for (var _service in this.devices[this.target].services) {
-    var _chars = this.devices[this.target].services[_service];
+    var _chars = this.devices[this.target].services[_service].characteristics;
 
     var service = {};
     service['uuid'] = _service;
+    service['startHandle'] = this.devices[this.target].services[_service].startHandle;
+    service['endHandle'] = this.devices[this.target].services[_service].endHandle;
     service['characteristics'] = [];
     for (var device_char in _chars) {
       var char = {};
