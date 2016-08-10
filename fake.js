@@ -291,25 +291,34 @@ FakeDevice.prototype.fixBlenoHandles = function(profile) {
               value: _obj.attribute.value
             };
 
-            /* Register descriptors if required. */
+            /* Register notification/indicate descriptors if required. */
             if (_obj.properties & 0x30) {
               for (var m in gatt._handles) {
                 var __obj = gatt._handles[m];
-                if ((__obj.type === 'descriptor') && (__obj.attribute === _obj.characteristic)) {
-                  var realDescHandle = profile.services[i].characteristics[characId].descriptors[__obj.uuid].handle;
+                if ((__obj.type === 'descriptor') && (__obj.attribute.uuid === _obj.uuid)) {
+                  console.log(profile.services[i].characteristics[characId].descriptors);
+                  for (var n in profile.services[i].characteristics[characId].descriptors) {
+                    var _desc = profile.services[i].characteristics[characId].descriptors[n];
+                    if (_desc.uuid == __obj.uuid) {
+                      var realDescHandle = profile.services[i].characteristics[characId].descriptors[n].handle;
 
-                  patchedHandles[realDescHandle] = {
-                    type: 'descriptor',
-                    handle: realDescHandle,
-                    uuid: '2902',
-                    attribute: __obj.attribute,
-                    properties: __obj.properties,
-                    secure: __obj.secure,
-                    value: __obj.value
+                      patchedHandles[realDescHandle] = {
+                        type: 'descriptor',
+                        handle: realDescHandle,
+                        uuid: '2902',
+                        attribute: __obj.attribute,
+                        properties: __obj.properties,
+                        secure: __obj.secure,
+                        value: __obj.value
+                      }
+                    }
                   }
+                  break;
                 }
               }
             }
+
+            /* TODO: Add other descriptors. */
           }
         }
       }
