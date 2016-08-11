@@ -82,6 +82,7 @@ if (args.web_port != null) {
 } else {
     var uiPort = 8080;
 }
+
 /* Define bluetooth interface. */
 if (args.iface != null) {
   var iface = parseInt(args.iface);
@@ -92,6 +93,9 @@ if (args.iface != null) {
   iface = 0;
 }
 console.log(util.format('[i] Using interface hci%d', iface).bold);
+
+/* Set advertisement interval to minimum value (20ms). */
+process.env.BLENO_ADVERTISING_INTERVAL = 20;
 
 /* Create our core. */
 var enableWebServer = args.web;
