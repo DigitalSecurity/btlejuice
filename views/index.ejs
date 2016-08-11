@@ -61,7 +61,11 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h4>Select a target device</h4>
+            <div style="float: left;">
+              <h4>Select a target device</h4>
+              <h6>Double-click on an item to proxify the corresponding device</h6>
+            </div>
+            <button type="button" class="close" data-dismiss="modal" style="float: right;">&times;</button>
           </div>
           <div class="modal-body">
             <div ng-if="error" class="alert alert-danger">
@@ -72,6 +76,7 @@
                   ng-class="{active: isSelected(target)}"
                   ng-repeat="target in targets"
                   ng-click="selectTarget(target)"
+                  ng-dblclick="onSelectDblClick(target)"
                   class="list-group-item">
                   <div ng-if="target.name">{{target.name}}</div>
                   <div style="font-size: 0.8em;">{{target.address}}</div>
@@ -79,9 +84,10 @@
                 </a>
             </div>
           </div>
+          <!--
           <div class="modal-footer">
             <button type="button" class="btn btn-primary" ng-click="onSelectClick()">Select</button>
-          </div>
+          </div>-->
         </div>
       </div>
     </div>
@@ -136,6 +142,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" ng-if="action.op == 'notification'" ng-click="onDrop()">Drop</button>
+            <button type="button" class="btn btn-secondary" ng-if="action.op == 'write'" ng-click="onDismiss()">Dismiss</button>
             <button type="button" class="btn btn-primary" ng-click="onForward()">Forward</button>
           </div>
         </div>

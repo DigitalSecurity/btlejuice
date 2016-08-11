@@ -222,7 +222,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
      $scope.targets = [];
    });
 
-   $scope.onSelectClick = function(){
+   $scope.onSelectClick = function(target){
      /* If a target has been selected, tell the interceptor to use it. */
      if ($scope.target != null) {
        interceptor.selectTarget($scope.target.address, function(){
@@ -233,6 +233,14 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
        /* Display an error. */
        $scope.error = true;
      }
+   };
+
+   $scope.onSelectDblClick = function(target) {
+     /* Select target. */
+     $scope.target = target;
+
+     /* Simulate a click on the 'Select' button. */
+     $scope.onSelectClick();
    };
  });
 
@@ -382,6 +390,24 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
         /* TODO: notify user the hexii is incorrect. */
       }
     };
+
+  $scope.onDismiss = function() {
+    /* Dismiss. */
+    if ($scope.action.op == 'write') {
+      interceptor.proxyWriteResponse(
+        $scope.action.service,
+        $scope.action.characteristic,
+        null
+      );
+
+      /* Remove the edit popup. */
+      $('#m_hook').modal('hide');
+
+      /* Editing no more. */
+      interceptor.processNextRequest();
+    }
+  };
+
   });
 
 
