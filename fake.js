@@ -296,7 +296,6 @@ FakeDevice.prototype.fixBlenoHandles = function(profile) {
               for (var m in gatt._handles) {
                 var __obj = gatt._handles[m];
                 if ((__obj.type === 'descriptor') && (__obj.attribute.uuid === _obj.uuid)) {
-                  console.log(profile.services[i].characteristics[characId].descriptors);
                   for (var n in profile.services[i].characteristics[characId].descriptors) {
                     var _desc = profile.services[i].characteristics[characId].descriptors[n];
                     if (_desc.uuid == __obj.uuid) {
