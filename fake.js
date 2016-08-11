@@ -382,7 +382,7 @@ FakeDevice.prototype.onWrite = function(service, characteristic, data, offset, w
   }.bind(this));
 
   /* Notify that a write operation has occured. */
-  this.emit('write', service, characteristic, new Buffer(data), offset);
+  this.emit('write', service, characteristic, new Buffer(data), offset, withoutResponse);
 };
 
 /**
