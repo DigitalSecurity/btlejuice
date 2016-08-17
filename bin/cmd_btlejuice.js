@@ -19,10 +19,14 @@ const colors = require('colors');
 const util = require('util');
 
 /**
+ * Release version
+ **/
+
+/**
  * Command-line tool
  **/
 var parser = new argparse.ArgumentParser({
-  version: '1.0',
+  version: '1.0.6',
   addHelp: true,
   description: 'BtleJuice core & web interface'
 });
@@ -54,7 +58,7 @@ console.log('   ___ _   _       __        _          ');
 console.log('  / __\\ |_| | ___  \\ \\ _   _(_) ___ ___ ');
 console.log(' /__\\// __| |/ _ \\  \\ \\ | | | |/ __/ _ \\');
 console.log('/ \\/  \\ |_| |  __/\\_/ / |_| | | (_|  __/');
-console.log('\\_____/\\__|_|\\___\\___/ \\__,_|_|\\___\\___|   -- version 1.0');
+console.log('\\_____/\\__|_|\\___\\___/ \\__,_|_|\\___\\___|');
 console.log('');
 
 /* Build proxy URL. */
