@@ -380,6 +380,12 @@ Proxy.prototype.onDeviceDisconnected = function(){
   this.services = null;
   this.discovered = {};
 
+  /* Notify core device disconnected if not stopping. */
+  if ((this.state != 'stopping') && (this.state != 'disconnected')) {
+    this.send('device.disconnect', this.target);
+  }
+  this.send('status', 'disconnected');
+
   /* Mark as disconnected. */
   this.state = 'disconnected';
   this.device = null;
@@ -520,6 +526,7 @@ Proxy.prototype.scanDevices = function(){
 };
 
 Proxy.prototype.stop = function(){
+  this.state = 'stopping';
   console.log('[i] Stopping current proxy.'.bold);
 
   /* If already connected to a target, drop the connection. */

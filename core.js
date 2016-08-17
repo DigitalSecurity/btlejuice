@@ -322,11 +322,11 @@ App.prototype.connectProxy = function(){
   }.bind(this));
 
   /* Error message if remote device disconnects. */
-  this.proxy.on('device.disconnect', function(){
+  this.proxy.on('device.disconnect', function(target){
     //console.log('[warning] remote device has disconnected.'.orange);
     this.logger.warn('remote device has disconnected.');
-    this.onRemoteDeviceDisconnected();
-  });
+    this.onRemoteDeviceDisconnected(target);
+  }.bind(this));
 };
 
 App.prototype.createFakeDevice = function(profile) {
@@ -403,12 +403,19 @@ App.prototype.disableBluetoothService = function(iface) {
   }.bind(this));
 };
 
-App.prototype.onRemoteDeviceDisconnected = function() {
-  /* Notify client. */
-  this.send('device.disconnected');
-
-  /* Current status is disconnected. */
+App.prototype.onRemoteDeviceDisconnected = function(target) {
   this.setStatus('disconnected');
+
+  /* Forward to target, create mock on callback. */
+  if (this.fake != null) {
+    this.fake.stop();
+    this.fake = null;
+  }
+  this.proxy.emit('stop');
+  this.send('app.status', 'disconnected');
+
+  /* Notify client. */
+  this.send('device.disconnect', target);
 };
 
 if (!module.parent) {
