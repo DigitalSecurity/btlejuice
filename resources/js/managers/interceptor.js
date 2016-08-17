@@ -22,6 +22,9 @@ var Interceptor = function(){
   /* Current state. */
   this.state = this.STATE_IDLING;
 
+  /* Options. */
+  this.shouldReconnect = true;
+
   /* Registered hooks. */
   this.hooks = {};
 
@@ -95,6 +98,10 @@ Interceptor.prototype.setup = function() {
   this.socket.on('app.disconnect', function(client){
     this.onClientDisconnect();
   }.bind(this));
+
+  this.socket.on('device.disconnect', function(target){
+    this.onRemoteDeviceDisconnected(target);
+  }.bind(this));
 }
 
 
@@ -116,7 +123,9 @@ Interceptor.prototype.transaction = function(action, service, characteristic, da
     op: action,
     service: service,
     characteristic: characteristic,
-    data: data,
+    data: buffer2hexII(data),
+    dataHexii: buffer2hexII(data),
+    dataHex: buffer2hex(data)
   }, disableRefresh);
 };
 
@@ -154,7 +163,7 @@ Interceptor.prototype.proxyWriteResponse = function(service, characteristic, err
  **/
 
 Interceptor.prototype.proxyReadResponse = function(service, characteristic, data, disableRefresh) {
-  this.transaction('read', service, characteristic, buffer2hexII(data), disableRefresh);
+  this.transaction('read', service, characteristic, data, disableRefresh);
   this.socket.emit('proxy_read_resp', service, characteristic, data);
 };
 
@@ -175,7 +184,7 @@ Interceptor.prototype.deviceWrite = function(service, characteristic, data, offs
   this.socket.emit('ble_write', service, characteristic, data, offset, withoutResponse);
 
   /* Add a transaction. */
-  this.transaction('write', service, characteristic, buffer2hexII(data), disableRefresh);
+  this.transaction('write', service, characteristic, data, disableRefresh);
 };
 
 
@@ -353,7 +362,7 @@ Interceptor.prototype.onProxyNotify = function(service, characteristic, enabled)
  **/
 
 Interceptor.prototype.proxyNotifyData = function(service, characteristic, data, disableRefresh) {
-  this.transaction('notification', service, characteristic, buffer2hexII(data), disableRefresh);
+  this.transaction('notification', service, characteristic, data, disableRefresh);
   this.socket.emit('proxy_data', service, characteristic, data);
 };
 
@@ -607,6 +616,18 @@ Interceptor.prototype.onClientConnect = function(clientAddress) {
 
 Interceptor.prototype.onClientDisconnect = function(clientAddress) {
   this.transaction('event','disconnect', clientAddress);
+};
+
+Interceptor.prototype.onRemoteDeviceDisconnected = function(target) {
+  /* Client has been disconnected for sure :) */
+  this.transaction('event','disconnect', null);
+
+  /* Based on settings, asks the proxy to connect again. */
+  if (this.shouldReconnect) {
+    this.selectTarget(target,function(){
+      console.log('Target reselected !');
+    });
+  }
 };
 
 Interceptor.prototype.on = function(queueName, callback) {

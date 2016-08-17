@@ -72,6 +72,14 @@ BjProxy.controller('TransactionListCtrl', function($scope, $rootScope, $window){
       $scope.$apply();
   };
 
+  $scope.onSwitchDisplay = function(transaction) {
+    if (transaction.data === transaction.dataHexii) {
+      transaction.data = transaction.dataHex;
+    } else {
+      transaction.data = transaction.dataHexii;
+    }
+  }
+
   $scope.onReplayItem = function(transaction) {
     console.log('replay');
     console.log(transaction);
@@ -251,15 +259,16 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
 
   BjProxy.controller('SettingsCtrl', function($scope, $rootScope){
 
-    $scope.config = interceptor.getConfig();
-    $scope.config.devices = ['hci0','hci1'];
+    $scope.config = {reconnect: interceptor.shouldReconnect};
 
     $rootScope.$on('settings.show', function(){
       $('#m_settings').modal();
     });
 
     $scope.onSave = function(){
-      alert('proxy: '+$scope.proxy + ', device:'+$scope.hciDevice);
+      /* Save interceptor config parameters. */
+      interceptor.shouldReconnect = $scope.config.reconnect;
+      $('#m_settings').modal('hide');
     };
 
     $scope.onCancel = function(){
@@ -293,6 +302,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
         characteristic: characteristic,
         data: data,
         dataHexii: buffer2hexII(data),
+        dataHex: buffer2hex(data),
         offset: offset,
         withoutResponse: withoutResponse
       };
@@ -309,6 +319,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
         characteristic: characteristic,
         data: data,
         dataHexii: buffer2hexII(data),
+        dataHex: buffer2hex(data)
       };
       if (noRefresh == null)
         $scope.$apply();
@@ -323,6 +334,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
         characteristic: characteristic,
         data: data,
         dataHexii: buffer2hexII(data),
+        dataHex: buffer2hex(data)
       };
       if (noRefresh == null)
         $scope.$apply();

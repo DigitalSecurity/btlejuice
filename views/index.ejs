@@ -51,7 +51,7 @@
           <div ng-if="t.op != 'event'"   class="col-sm-1 samesize" style="font-size: 10pt; text-align: right; border-bottom: solid 1px #eee;" ng-cloak>{{t.op}}</div>
           <div ng-if="t.op != 'event'"  class="col-sm-3 samesize" style="font-size: 10pt;border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-cloak>{{t.service | makeUUID}}</div>
           <div ng-if="t.op != 'event'" class="col-sm-3 samesize" style="font-size: 10pt; border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-cloak>{{t.characteristic | makeUUID}}</div>
-          <div ng-if="t.op != 'event'" class="col-sm-5 samesize" style="font-family: monospace; font-size: 10pt; border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-cloak>{{t.data}}</div>
+          <div ng-if="t.op != 'event'" class="col-sm-5 samesize" style="font-family: monospace; font-size: 10pt; border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-click="onSwitchDisplay(t)" ng-cloak>{{t.data}}</div>
         </div>
       </div>
     </div>
@@ -190,9 +190,10 @@
           </div>
           <div class="modal-body">
             <form role="form">
-              <div class="form-froup">
-                <label for="proxy">Proxy:</label>
-                <input type="text" class="form-control" id="proxy" ng-model="config.proxy">
+              <div class="form-group">
+                <label class="checkbox-inline">
+                  <input type="checkbox" id="autoreconnect" ng-model="config.reconnect"> Reconnect on client disconnections
+                </label>
               </div>
             </form>
           </div>
