@@ -26,6 +26,7 @@
         <ul class="nav navbar-nav navbar-right">
           <li ng-class="{disabled: (config.status == 'disconnected')}" ng-if="intercepting == true" ng-click="onDisableIntercept()"><a href="#" data-toggle="tooltip" data-placement="bottom" title="Stop interception" ng-cloak><i class="fa fa-pause-circle"></i></a></i>
           <li ng-class="{disabled: (config.status == 'disconnected')}" ng-if="intercepting == false" ng-click="onEnableIntercept()"><a href="#" data-toggle="tooltip" data-placement="bottom" title="Start interception" ng-cloak><i class="fa fa-pause-circle-o"></i></a></i>
+          <li ng-click="onExport()"><a href="#" data-toggle="tooltip" data-placement="bottom" title="Export" ng-cloak><i class="fa fa-save"></i></a></li>
           <!-- <li ng-class="{disabled: (config.status == 'disconnected')}" ng-click="onServices()"><a href="#" data-toggle="tooltip" data-placement="bottom" title="List services and characteristics" ng-cloak><i class="fa fa-cubes"></i></a></li> -->
           <li ng-if="config.status == 'connected'"><a href="#" data-toggle="tooltip" data-placement="bottom" title="Disconnect device" ng-click="onDisconnect()" ng-cloak><i class="fa fa-bluetooth"></i></a></li>
           <li ng-if="config.status == 'connecting'"><a href="#" ng-cloak><i class="fa fa-spinner fa-spin"></i></a></li>
@@ -51,7 +52,7 @@
           <div ng-if="t.op != 'event'"   class="col-sm-1 samesize" style="font-size: 10pt; text-align: right; border-bottom: solid 1px #eee;" ng-cloak>{{t.op}}</div>
           <div ng-if="t.op != 'event'"  class="col-sm-3 samesize" style="font-size: 10pt;border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-cloak>{{t.service | makeUUID}}</div>
           <div ng-if="t.op != 'event'" class="col-sm-3 samesize" style="font-size: 10pt; border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-cloak>{{t.characteristic | makeUUID}}</div>
-          <div ng-if="t.op != 'event'" class="col-sm-5 samesize" style="font-family: monospace; font-size: 10pt; border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-click="onSwitchDisplay(t)" ng-cloak>{{t.data}}</div>
+          <div ng-if="t.op != 'event'" class="col-sm-5 samesize" style="font-family: monospace; font-size: 10pt; border-bottom: solid 1px #eee; border-left: solid 1px #888;" ng-click="onSwitchDisplay(t); $event.stopPropagation();" ng-cloak>{{t.data}}</div>
         </div>
       </div>
     </div>
@@ -175,6 +176,35 @@
             <button type="button" class="btn btn-secondary" ng-if="op == 'write'" ng-click="onWrite()">Write</button>
             <button type="button" class="btn btn-secondary" ng-if="op == 'notification'" ng-click="onNotify()">Notify</button>
             <button type="button" class="btn btn-primary" ng-click="onClose()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export dialog -->
+    <div class="modal" id="m_export" role="dialog" ng-controller="ExportCtrl">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4>Export data to file</h4>
+          </div>
+          <div class="modal-body">
+            <form role="form">
+              <div class="form-group">
+                <label for="filename">File name:</label>
+                <input type="text" class="form-control" ng-model="filename" id="filename"></input>
+              </div>
+              <div class="radio">
+                <label><input type="radio" ng-model="format" value="json" name="format">JSON</label>
+              </div>
+              <div class="radio">
+                <label><input type="radio" ng-model="format" value="text" name="format">Text (readable)</label>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" ng-click="onCancel()">Cancel</button>
+            <button type="button" class="btn btn-primary" ng-click="onExport()">Export</button>
           </div>
         </div>
       </div>

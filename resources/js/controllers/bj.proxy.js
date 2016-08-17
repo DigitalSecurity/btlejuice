@@ -35,6 +35,88 @@ BjProxy.controller('TransactionListCtrl', function($scope, $rootScope, $window){
     $scope.$apply();
   });
 
+  $rootScope.$on('transactions.export.file', function(event, filename, format){
+
+    /* Append extension. */
+    if (format === 'json')
+      var ext = 'json';
+    else
+      var ext = 'txt';
+    filename += '.' + ext;
+
+    /* Format data based on selected format. */
+    switch(format) {
+      case 'json':
+        /* Export as JSON data, easy to process. */
+        var exportData = {
+          'target': interceptor.getProfile(),
+          'activity': [],
+        }
+        for (var i in $scope.transactions) {
+          var t = $scope.transactions[i];
+          exportData.activity.push({
+            type: t.op,
+            service: formatUUID(t.service),
+            characteristic: formatUUID(t.characteristic),
+            data: t.dataHex.replace(/ /g,''),
+          })
+        }
+        /* Convert to JSON. */
+        exportData = angular.toJson(exportData);
+        break;
+
+      /* Text export is intended to be readable. */
+      case 'text':
+        var profile = interceptor.getProfile();
+        var exportData = 'BtleJuice export data\n\n';
+        exportData += '==< Capture Information >\n';
+        exportData += ' BD Address : ' + profile.address + '\n';
+        exportData += ' Device Name: ' + profile.name + '\n';
+        if (profile.adv_data != null) {
+          exportData += ' Adv. Data  : ' + profile.adv_data + '\n';
+        }
+        if (profile.scan_data != null) {
+          exportData += ' Scan Data  : ' + profile.scan_data + '\n';
+        }
+        exportData += ' Saved on   : ' + (new Date()).toUTCString() + '\n';
+        exportData += '==========================\n\n';
+
+        for (var i in $scope.transactions) {
+          var row = '';
+          var t = $scope.transactions[i];
+          if (t.op == 'event') {
+            if (t.service == 'connect')
+              row = '>>> Connection from remote device to dummy';
+            else if (t.service == 'disconnect')
+              row = '>>> Disconnection from dummy';
+          } else {
+            /* TODO: add ASCII dump. */
+            switch (t.op) {
+              case 'read':
+                row = 'READ from '+formatUUID(t.service)+':'+formatUUID(t.characteristic)+' -- ' + t.dataHex;
+                break;
+
+              case 'write':
+                row = 'WRITE to ' + formatUUID(t.service)+':'+formatUUID(t.characteristic)+' -- ' + t.dataHex;
+                break;
+
+              case 'notification':
+                row = 'NOTIFICATION from ' + formatUUID(t.service)+':'+format(t.characteristic)+' -- ' + t.dataHex;
+                break;
+            }
+          }
+          exportData += row + '\n';
+        }
+        break;
+    }
+
+    var blob = new Blob([exportData]);
+    var link = angular.element('<a></a>');
+    link.attr('href', window.URL.createObjectURL(blob));
+    link.attr('download',filename);
+    link[0].click();
+  });
+
   $scope.options = function(item) {
     if (item.op == 'event') {
       return [];
@@ -160,6 +242,9 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
     $scope.intercepting = false;
   };
 
+  $scope.onExport = function(){
+    $scope.$emit('transactions.export');
+  }
 
   $rootScope.$on('target.connected', function(event, target){
     console.log('target is connected !');
@@ -476,7 +561,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
 
 
 /**
-* Transaction list controller
+* Replay controller
 **/
 
 BjProxy.controller('ReplayCtrl', function($scope, $rootScope, $window){
@@ -530,4 +615,53 @@ BjProxy.controller('ReplayCtrl', function($scope, $rootScope, $window){
       interceptor.proxyNotifyData($scope.service, $scope.characteristic, data, true);
     }
   };
+});
+
+/**
+* Export controller
+**/
+
+BjProxy.controller('ExportCtrl', function($scope, $rootScope, $window){
+
+  $scope.filename = filename;
+  $scope.format = 'json';
+
+  $rootScope.$on('transactions.export', function(){
+    $scope.showExportDlg();
+  });
+
+  $scope.showExportDlg = function(){
+    /* Get actual date. */
+    var exportDate = (new Date())
+      .toISOString()
+      .replace(/T/g,'_')
+      .replace(/-/g,'')
+      .replace(/:/g,'')
+      .slice(0,15);
+
+    var profile = interceptor.getProfile();
+    if (profile === null) {
+      alert('No traffic to export !');
+      return;
+    } else {
+      var deviceAddress = profile.address.replace(/:/g,'');
+      var deviceName = profile.name.replace(/ /g,'_')
+        .replace(/[^\x20-\x7E]+/g, '');
+      var filename = deviceAddress+'-'+deviceName+'-'+exportDate
+    }
+    $scope.filename = filename;
+    $('#m_export').modal();
+  };
+
+  $scope.onCancel = function(){
+    $('#m_export').modal('hide');
+  };
+
+  $scope.onExport = function(){
+    console.log($scope.filename);
+    console.log($scope.format);
+    $scope.$emit('transactions.export.file', $scope.filename, $scope.format);
+    $('#m_export').modal('hide');
+  };
+
 });
