@@ -46,6 +46,9 @@ var Interceptor = function(){
 
   /* Install handlers. */
   this.setup();
+
+  /* Ensure proxy is not connected to another device. */
+  this.disconnect();
 };
 
 /**
@@ -564,7 +567,6 @@ Interceptor.prototype.selectTarget = function(target, callback) {
 Interceptor.prototype.disconnect = function() {
   this.socket.emit('stop');
   this.emit('app.status', 'disconnected');
-  this.config.profile = null;
 };
 
 Interceptor.prototype.getConfig = function(){

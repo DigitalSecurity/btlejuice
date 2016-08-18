@@ -32,7 +32,6 @@ BjProxy.controller('TransactionListCtrl', function($scope, $rootScope, $window){
   $rootScope.$on('transactions.reset', function(){
     console.log('got transactions.reset');
     $scope.transactions = [];
-    $scope.$apply();
   });
 
   $rootScope.$on('transactions.export.file', function(event, filename, format){
@@ -101,7 +100,7 @@ BjProxy.controller('TransactionListCtrl', function($scope, $rootScope, $window){
                 break;
 
               case 'notification':
-                row = 'NOTIFICATION from ' + formatUUID(t.service)+':'+format(t.characteristic)+' -- ' + t.dataHex;
+                row = 'NOTIFICATION from ' + formatUUID(t.service)+':'+formatUUID(t.characteristic)+' -- ' + t.dataHex;
                 break;
             }
           }
@@ -573,6 +572,19 @@ BjProxy.controller('ReplayCtrl', function($scope, $rootScope, $window){
 
   $rootScope.$on('replay', function(event, transaction){
     console.log(transaction);
+    switch(transaction.op) {
+      case 'read':
+        $scope.title = 'Replay read';
+        break;
+
+      case 'write':
+        $scope.title = 'Replay write';
+        break;
+
+      case 'notification':
+        $scope.title = 'Replay notification';
+        break;
+    }
     $scope.op = transaction.op;
     $scope.service = transaction.service;
     $scope.characteristic = transaction.characteristic;
@@ -631,6 +643,9 @@ BjProxy.controller('ExportCtrl', function($scope, $rootScope, $window){
   });
 
   $scope.showExportDlg = function(){
+    /* Lil' hack to get the actual number of transactions displayed. */
+    var numTransactions = angular.element(document.getElementById('transactions')).scope().transactions.length;
+
     /* Get actual date. */
     var exportDate = (new Date())
       .toISOString()
@@ -640,8 +655,7 @@ BjProxy.controller('ExportCtrl', function($scope, $rootScope, $window){
       .slice(0,15);
 
     var profile = interceptor.getProfile();
-    if (profile === null) {
-      alert('No traffic to export !');
+    if (numTransactions === 0) {
       return;
     } else {
       var deviceAddress = profile.address.replace(/:/g,'');
