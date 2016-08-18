@@ -4,10 +4,13 @@ BtleJuice - Bluetooth Man in the Middle framework
 version 1.0.6
 -------------
 
-* Improved bluetooth core
-* Added support for auto-reconnection: when a remote device disconnects, the proxy will automatically reconnect
-* Fixed settings dialog
+
 * Added export feature (JSON and text)
+* Added support for auto-reconnection: when a remote device disconnects, the proxy will automatically reconnect
+* Added support of hex and hexII format in the main interface
+* Fixed settings dialog
+* Improved bluetooth core
+* Fixed other minor bugs
 
 version 1.0.5 (initial release)
 -------------------------------
