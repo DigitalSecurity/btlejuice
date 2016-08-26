@@ -13,7 +13,7 @@ var util = require('util');
 var colors = require('colors');
 var winston = require('winston');
 
-var FakeDevice = function(profile) {
+var FakeDevice = function(profile, keepHandles) {
   events.EventEmitter.call(this);
 
   /* Save logger if any. */
@@ -54,6 +54,10 @@ var FakeDevice = function(profile) {
   bleno.removeAllListeners('accept');
   bleno.removeAllListeners('disconnect');
   bleno.removeAllListeners('stateChange');
+
+  /* Keep handles option. */
+  if ((keepHandles != null) && (keepHandles != false))
+    this.keepHandles = true;
 
   /* Set services as described in config file. */
   this.services = [];
@@ -154,7 +158,10 @@ var FakeDevice = function(profile) {
         bleno.setServices(_this.services);
 
         /* Fix handles. */
-        _this.fixBlenoHandles(profile);
+        if (_this.keepHandles) {
+          _this.logger.info('Fixing Bleno handles ...');
+          _this.fixBlenoHandles(profile, _this.services);
+        }
 
       } else {
         //console.log('[setup] error while registering services !'.red);
@@ -223,110 +230,119 @@ util.inherits(FakeDevice, events.EventEmitter);
  * Fix bleno handles in order to avoid Gatt Cache issues.
  */
 
-FakeDevice.prototype.fixBlenoHandles = function(profile) {
-  var gatt = bleno._bindings._gatt;
-  var services = [];
-
+FakeDevice.prototype.fixBlenoHandles = function(profile, services) {
   /* Target handles array. */
   var patchedHandles = [];
 
   /* Find services' start and end handles. */
-  for (var i in profile.services) {
+  for (var i=0; i < profile.services.length; i++) {
     var service = profile.services[i];
+    var p_service = services[i];
 
-    /* Find all the handles beloging to service's characteristics. */
-    for (var j in gatt._handles) {
-      var obj = gatt._handles[j];
-      if ((obj.type === 'service') && (obj.uuid === service.uuid)) {
-        /* Keeps start and end handle to find characteristics handles. */
-        var serviceStartHandle = obj.startHandle;
-        var serviceEndHandle = obj.endHandle;
+    patchedHandles[service.startHandle] = {
+      type: 'service',
+      uuid: service.uuid,
+      attribute: services[i],
+      startHandle: service.startHandle,
+      endHandle: service.endHandle
+    };
 
-        var realServiceHandle = profile.services[i].startHandle;
-        var realServiceEndHandle = profile.services[i].endHandle;
+    for (var j=0; j<service.characteristics.length; j++) {
+      var characteristic = service.characteristics[j];
+      var p_characteristic = services[i].characteristics[j];
 
-        /* Register service handle. */
-        patchedHandles[realServiceHandle] = {
-          type: 'service',
-          uuid: service.uuid,
-          attribute: obj.attribute,
-          startHandle: realServiceHandle,
-          endHandle: realServiceEndHandle,
-        };
+      var properties = 0;
+      var secure = 0;
 
-        /* Register service's characteristics. */
-        for (var k in gatt._handles) {
-          var _obj = gatt._handles[k];
+      if (p_characteristic.properties.indexOf('read') !== -1) {
+        properties |= 0x02;
 
-          /* Characteristic belongs to service ? */
-          if ((_obj.type === 'characteristic') &&
-            (_obj.startHandle > serviceStartHandle) &&
-            (_obj.startHandle <= serviceEndHandle)) {
+        if (p_characteristic.secure.indexOf('read') !== -1) {
+          secure |= 0x02;
+        }
+      }
 
-            var characId = null;
-            for (var n in profile.services[i].characteristics) {
-              if (profile.services[i].characteristics[n].uuid == _obj.uuid) {
-                characId = n;
-                break;
-              }
-            }
+      if (p_characteristic.properties.indexOf('writeWithoutResponse') !== -1) {
+        properties |= 0x04;
 
-            var realCharacHandle = profile.services[i].characteristics[characId].startHandle;
-            var realCharacValueHandle = profile.services[i].characteristics[characId].valueHandle;
+        if (p_characteristic.secure.indexOf('writeWithoutResponse') !== -1) {
+          secure |= 0x04;
+        }
+      }
 
-            /* Save characteristic. */
-            patchedHandles[realCharacHandle] = {
-              type: 'characteristic',
-              uuid: _obj.uuid,
-              properties: _obj.properties,
-              secure: _obj.secure,
-              attribute: _obj.attribute,
-              startHandle: realCharacHandle,
-              valueHandle: realCharacValueHandle,
-            };
+      if (p_characteristic.properties.indexOf('write') !== -1) {
+        properties |= 0x08;
 
-            patchedHandles[realCharacValueHandle] = {
-              type: 'characteristicValue',
-              handle: realCharacValueHandle,
-              value: _obj.attribute.value
-            };
+        if (p_characteristic.secure.indexOf('write') !== -1) {
+          secure |= 0x08;
+        }
+      }
 
-            /* Register notification/indicate descriptors if required. */
-            if (_obj.properties & 0x30) {
-              for (var m in gatt._handles) {
-                var __obj = gatt._handles[m];
-                if ((__obj.type === 'descriptor') && (__obj.attribute.uuid === _obj.uuid)) {
-                  for (var n in profile.services[i].characteristics[characId].descriptors) {
-                    var _desc = profile.services[i].characteristics[characId].descriptors[n];
-                    if (_desc.uuid == __obj.uuid) {
-                      var realDescHandle = profile.services[i].characteristics[characId].descriptors[n].handle;
+      if (p_characteristic.properties.indexOf('notify') !== -1) {
+        properties |= 0x10;
 
-                      patchedHandles[realDescHandle] = {
-                        type: 'descriptor',
-                        handle: realDescHandle,
-                        uuid: '2902',
-                        attribute: __obj.attribute,
-                        properties: __obj.properties,
-                        secure: __obj.secure,
-                        value: __obj.value
-                      }
-                    }
-                  }
-                  break;
-                }
-              }
-            }
+        if (p_characteristic.secure.indexOf('notify') !== -1) {
+          secure |= 0x10;
+        }
+      }
 
-            /* TODO: Add other descriptors. */
-          }
+      if (p_characteristic.properties.indexOf('indicate') !== -1) {
+        properties |= 0x20;
+
+        if (p_characteristic.secure.indexOf('indicate') !== -1) {
+          secure |= 0x20;
+        }
+      }
+
+      patchedHandles[characteristic.startHandle] = {
+        type: 'characteristic',
+        uuid: characteristic.uuid,
+        properties: properties,
+        secure: secure,
+        attribute: p_characteristic,
+        startHandle: characteristic.startHandle,
+        valueHandle: characteristic.valueHandle,
+        endHandle: characteristic.endHandle
+      };
+
+      patchedHandles[characteristic.valueHandle] = {
+        type: 'characteristicValue',
+        handle: characteristic.valueHandle,
+        value: characteristic.value
+      };
+
+      for (var k = 0; k < characteristic.descriptors.length; k++) {
+        var descriptor = characteristic.descriptors[k];
+        var p_descriptor = services[i].characteristics[j].descriptors[k];
+
+        if (descriptor.uuid == '2902') {
+          patchedHandles[descriptor.handle] = {
+            type: 'descriptor',
+            handle: descriptor.handle,
+            uuid: '2902',
+            attribute: p_characteristic,
+            properties: (0x02 | 0x04 | 0x08), // read/write
+            secure: (secure & 0x10) ? (0x02 | 0x04 | 0x08) : 0,
+            value: new Buffer([0x00, 0x00])
+          };
+        } else {
+          patchedHandles[descriptor.handle] = {
+            type: 'descriptor',
+            handle: descriptor.handle,
+            uuid: descriptor.uuid,
+            attribute: p_descriptor,
+            properties: 0x02, // read only
+            secure: 0x00,
+            value: descriptor.value
+          };
         }
       }
     }
   }
 
-  /* Update bleno's handles. */
   bleno._bindings._gatt._handles = patchedHandles;
 }
+
 
 
 /**

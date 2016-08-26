@@ -339,7 +339,8 @@ Proxy.prototype.connectDevice = function(peripheral) {
                             for (var desc in descriptors) {
                               _charac.descriptors.push({
                                 'uuid': descriptors[desc].uuid,
-                                'handle': noble._bindings._gatts[deviceUuid]._descriptors[service][charac][descriptors[desc].uuid].handle
+                                'handle': noble._bindings._gatts[deviceUuid]._descriptors[service][charac][descriptors[desc].uuid].handle,
+                                'value': (descriptors[desc].uuid == '2901')?new Buffer([0x00, 0x00]):null;
                               });
                             }
                             t.onCharacteristicDiscovered(service, charac);
@@ -458,6 +459,9 @@ Proxy.prototype.onCharacteristicDiscovered = function(service, characteristic) {
  **/
 
 Proxy.prototype.setGattHandlers = function(){
+  if (this.client == null)
+    return;
+
   /* Remove previous listeners. */
   this.client.removeAllListeners('ble_read');
   this.client.removeAllListeners('ble_write');

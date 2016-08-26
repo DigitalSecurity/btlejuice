@@ -71,8 +71,8 @@ BjProxy.controller('TransactionListCtrl', function($scope, $rootScope, $window){
         exportData += '==< Capture Information >\n';
         exportData += ' BD Address : ' + profile.address + '\n';
         exportData += ' Device Name: ' + profile.name + '\n';
-        if (profile.adv_data != null) {
-          exportData += ' Adv. Data  : ' + profile.adv_data + '\n';
+        if (profile.ad_records != null) {
+          exportData += ' Adv. Data  : ' + profile.ad_records + '\n';
         }
         if (profile.scan_data != null) {
           exportData += ' Scan Data  : ' + profile.scan_data + '\n';
@@ -343,7 +343,10 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
 
   BjProxy.controller('SettingsCtrl', function($scope, $rootScope){
 
-    $scope.config = {reconnect: interceptor.shouldReconnect};
+    $scope.config = {
+      reconnect: interceptor.shouldReconnect,
+      keepHandles: interceptor.keepHandles,
+    };
 
     $rootScope.$on('settings.show', function(){
       $('#m_settings').modal();
@@ -352,6 +355,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
     $scope.onSave = function(){
       /* Save interceptor config parameters. */
       interceptor.shouldReconnect = $scope.config.reconnect;
+      interceptor.keepHandles = $scope.config.keepHandles;
       $('#m_settings').modal('hide');
     };
 

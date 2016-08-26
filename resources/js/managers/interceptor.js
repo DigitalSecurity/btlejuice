@@ -24,6 +24,7 @@ var Interceptor = function(){
 
   /* Options. */
   this.shouldReconnect = true;
+  this.keepHandles = false;
 
   /* Registered hooks. */
   this.hooks = {};
@@ -560,8 +561,8 @@ Interceptor.prototype.selectTarget = function(target, callback) {
     this.setup();
   }.bind(this));
 
-  /* Asks the proxy to select the correct target. */
-  this.socket.emit('target', target);
+  /* Asks the proxy to select the correct target with correct options. */
+  this.socket.emit('target', target, this.keepHandles);
 };
 
 Interceptor.prototype.disconnect = function() {

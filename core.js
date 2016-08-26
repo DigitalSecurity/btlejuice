@@ -145,10 +145,13 @@ App.prototype.onClientConnection = function(client) {
    * Handles target connection.
    **/
 
-  client.on('target', function(target){
+  client.on('target', function(target, keepHandles){
     this.setStatus('connecting');
     client.emit('app.status', 'connecting');
     this.setTarget(target);
+
+    /* Set the keepHandles option internally. */
+    this.keepHandles = keepHandles;
 
     /* Forward to target, create mock on callback. */
     /*this.setStatus('connecting');
@@ -331,7 +334,7 @@ App.prototype.connectProxy = function(){
 
 App.prototype.createFakeDevice = function(profile) {
   const fake = require('./fake');
-  this.fake = new fake(profile);
+  this.fake = new fake(profile, this.keepHandles);
 
   /* Listen for events on this fake device, and notify the web interface. */
   this.fake.on('write', function(service, characteristic, data, offset, withoutResponse){

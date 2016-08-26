@@ -146,7 +146,7 @@ More information about how to use the Node.js bindings in the [package documenta
 Thanks
 ------
 
-A special thank to Slawomir Jasek who pointed out many noble/bleno tricks to avoid issues with mobile applications, and shared BLE MITM strategies during DEF CON 24 =). He is also the author of [Gattacker](https://github.com/securing/gattacker). 
+A special thank to Slawomir Jasek who pointed out many noble/bleno tricks to avoid issues with mobile applications, and shared BLE MITM strategies during DEF CON 24 =). He is also the author of [Gattacker](https://github.com/securing/gattacker).
 
 
 License
