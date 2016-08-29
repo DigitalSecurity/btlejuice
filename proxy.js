@@ -62,6 +62,9 @@ var Proxy = function(options){
   /* LE Adv report */
   this.le_adv_handler = null;
   this.watchdog = null;
+
+  /* GATT cache. */
+  this.gattCache = {};
 };
 
 /**
@@ -168,37 +171,37 @@ Proxy.prototype.configure = function(target){
 Proxy.prototype.acquireTarget = function(config) {
   console.log(('[status] Acquiring target ' + this.target).bold);
 
-  /* Track BLE advertisement reports. */
-  if (this.le_adv_handler != null)
-      noble._bindings._gap._hci.removeListener(
-        'leAdvertisingReport',
-        this.le_adv_handler
-      )
-  this.le_adv_handler = function(status, type, address, addressType, report, rssi){
-    this.discoverDeviceAdv(address, report, rssi);
-  }.bind(this);
-  noble._bindings._gap._hci.on(
-    'leAdvertisingReport',
-    this.le_adv_handler
-  );
-  /*
-  noble._bindings._gap._hci.on(
-    'leAdvertisingReport',
-    function(status, type, address, addressType, report, rssi){
+  /* If device is already known, use the cache. */
+  if (this.target in this.devices && this.devices[this.target].cache != null) {
+    var peripheral = this.devices[this.target].cache.peripheral;
+    this.connectDevice(peripheral);
+  } else {
+    /* Track BLE advertisement reports. */
+    if (this.le_adv_handler != null)
+        noble._bindings._gap._hci.removeListener(
+          'leAdvertisingReport',
+          this.le_adv_handler
+        )
+    this.le_adv_handler = function(status, type, address, addressType, report, rssi){
       this.discoverDeviceAdv(address, report, rssi);
-    }.bind(this));
-  */
-  /* Track BLE advertisement reports. */
-  noble.on('discover', function(peripheral){
-      if (peripheral.address.toLowerCase() === this.target.toLowerCase()) {
-        noble.stopScanning();
-        this.connectDevice(peripheral, config);
-      }
-    }.bind(this)
-  );
+    }.bind(this);
+    noble._bindings._gap._hci.on(
+      'leAdvertisingReport',
+      this.le_adv_handler
+    );
 
-  /* Start scanning when ble device is ready. */
-  noble.startScanning();
+    /* Track BLE advertisement reports. */
+    noble.on('discover', function(peripheral){
+        if (peripheral.address.toLowerCase() === this.target.toLowerCase()) {
+          noble.stopScanning();
+          this.connectDevice(peripheral, config);
+        }
+      }.bind(this)
+    );
+
+    /* Start scanning when ble device is ready. */
+    noble.startScanning();
+  }
 };
 
 /**
@@ -215,6 +218,7 @@ Proxy.prototype.discoverDeviceAdv = function(bdaddr, report, rssi)  {
       adv_records: report,
       scan_data: null,
       connected: false,
+      cache: null
     };
   } else if (bdaddr in this.devices) {
     /* Save scan response. */
@@ -238,6 +242,20 @@ Proxy.prototype.isAllDiscovered = function() {
     }
   }
 
+  /* All discovered, fill GATT cache. */
+  var bdaddr = this.target.replace(/:/g,'').toLowerCase();
+  var handle = noble._bindings._handles[bdaddr];
+  var gatt = noble._bindings._gatts[handle];
+
+  this.devices[this.target].cache = {
+    peripheral: this.device,  /* Noble peripheral object. */
+    services: gatt._services, /* GATT services. */
+    characteristics: gatt._characteristics, /* GATT characteristics. */
+    descriptors: gatt._descriptors, /* GATT descriptors. */
+    handles: gatt._handles, /* GATT handles -- fixed by BtleJuice if option is set */
+    bjServices: this.services, /* BtleJuice services structure. */
+  };
+
   return true;
 }
 
@@ -258,6 +276,36 @@ Proxy.prototype.connectDevice = function(peripheral) {
 
   this.device.connect(function(error) {
 
+    /* If GATT cache already filled, then mark device as connected. */
+    var gattCache = this.devices[this.target].cache;
+    if (this.devices[this.target].cache != null) {
+      console.log('Target in cache, restoring ...');
+      this.state = 'connected';
+
+      /* Restore Noble internal structures on reconnection. */
+      var bdaddr = this.target.replace(/:/g,'').toLowerCase();
+      var handle = noble._bindings._handles[bdaddr];
+      var gatt = noble._bindings._gatts[handle];
+
+      gatt._services = gattCache.services;
+      gatt._characteristics = gattCache.characteristics;
+      gatt._descriptors = gattCache.descriptors;
+      this.device = gattCache.peripheral;
+      this.services = gattCache.bjServices;
+
+      /* Defuse watchdog if any. */
+      if (this.watchdog != null) {
+        clearTimeout(this.watchdog);
+        this.watchdog = null;
+      }
+
+      this.setGattHandlers();
+      this.state = 'forwarding';
+      this.send('profile', this.formatProfile());
+      this.send('ready', true);
+      console.log('[status] Proxy configured and ready to relay !'.green);
+
+    } else {
       /* Setup  the disconnect handler. */
       peripheral.removeAllListeners('disconnect');
       peripheral.on('disconnect', function(){
@@ -340,7 +388,7 @@ Proxy.prototype.connectDevice = function(peripheral) {
                               _charac.descriptors.push({
                                 'uuid': descriptors[desc].uuid,
                                 'handle': noble._bindings._gatts[deviceUuid]._descriptors[service][charac][descriptors[desc].uuid].handle,
-                                'value': (descriptors[desc].uuid == '2901')?new Buffer([0x00, 0x00]):null;
+                                'value': (descriptors[desc].uuid == '2901')?new Buffer([0x00, 0x00]):null
                               });
                             }
                             t.onCharacteristicDiscovered(service, charac);
@@ -363,8 +411,8 @@ Proxy.prototype.connectDevice = function(peripheral) {
       } else {
         this.send('ready', false);
       }
-    }.bind(this)
-  );
+    }
+  }.bind(this));
 };
 
 Proxy.prototype.onDeviceDisconnected = function(){
