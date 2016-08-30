@@ -147,19 +147,13 @@ App.prototype.onClientConnection = function(client) {
 
   client.on('target', function(target, keepHandles){
     this.setStatus('connecting');
-    client.emit('app.status', 'connecting');
     this.setTarget(target);
+    this.send('app.status', 'connecting');
 
     /* Set the keepHandles option internally. */
     this.keepHandles = keepHandles;
 
     /* Forward to target, create mock on callback. */
-    /*this.setStatus('connecting');
-      client.emit('profile', p);
-
-      //this.createMock(p);
-    }.bind(this));
-    */
     this.proxy.emit('target', target);
   }.bind(this));
 
@@ -187,7 +181,6 @@ App.prototype.onClientConnection = function(client) {
     this.profile = p;
     client.emit('profile', p);
 
-    //console.log('create fake device');
     this.createFakeDevice(p);
   }.bind(this));
 
@@ -210,7 +203,7 @@ App.prototype.onClientConnection = function(client) {
   this.proxy.removeAllListeners('ready');
   this.proxy.on('ready', function(){
     this.status = 'connected';
-    //console.log('[proxy] Proxy set up and ready to use =)'.yellow);
+
     this.logger.info('proxy set up and ready to use =)');
     client.emit('ready');
     client.emit('app.status', 'connected');
@@ -218,8 +211,6 @@ App.prototype.onClientConnection = function(client) {
   }.bind(this));
 
   this.proxy.on('ble_data', function(service, characteristic, data){
-    //console.log(arguments);
-    //console.log('got data notification');
     this.logger.debug('Data notification for service %s and charac. %s (ble_data)', service, characteristic);
     client.emit('data', service, characteristic, data);
   }.bind(this));
@@ -256,14 +247,11 @@ App.prototype.onClientConnection = function(client) {
   }.bind(this));
 
   client.on('data', function(service, characteristic, data){
-    //console.log(arguments);
-    //console.log('got data notification');
     this.logger.debug('Data notification for service %s and charac. %s (data)', s, c);
     this.fake.emit('data', service, characteristic, data);
   });
 
   client.on('proxy_notify_resp', function(s,c, error) {
-    //console.log('got proxy_notify_resp');
     this.fake.emit('notify_resp', s, c, error);
   }.bind(this));
 
@@ -273,12 +261,10 @@ App.prototype.onClientConnection = function(client) {
   }.bind(this));
 
   client.on('proxy_read_resp', function(s, c, data) {
-    //console.log('got proxy_read_resp:' +(new Buffer(data).toString('hex')));
     this.fake.emit('read_resp', s, c, data);
   }.bind(this));
 
   client.on('proxy_write_resp', function(s, c, error) {
-    //console.log('got proxy_write_resp');
     this.fake.emit('write_resp', s, c, error);
   }.bind(this));
 
@@ -289,7 +275,6 @@ App.prototype.onClientConnection = function(client) {
  **/
 
 App.prototype.send = function(){
-  //console.log('emit '+arguments[0]);
   for (var client in this.clients) {
     this.clients[client].emit.apply(
       this.clients[client],
@@ -309,7 +294,6 @@ App.prototype.connectProxy = function(){
   /* Connect to the proxy. */
   this.proxy = io(this.proxyUrl);
   this.proxy.on('connect', function(){
-    //console.log('[setup] successfully connected to proxy'.yellow);
     this.logger.info('successfully connected to proxy');
 
     /* Create local server. */
@@ -319,14 +303,12 @@ App.prototype.connectProxy = function(){
 
   /* Error message if connection fails. */
   this.proxy.on('connect_error', function(){
-    //console.log('[setup] cannot connect to proxy.'.red);
     this.logger.error('cannot connect to proxy.');
     process.exit(-1);
   }.bind(this));
 
   /* Error message if remote device disconnects. */
   this.proxy.on('device.disconnect', function(target){
-    //console.log('[warning] remote device has disconnected.'.orange);
     this.logger.warn('remote device has disconnected.');
     this.onRemoteDeviceDisconnected(target);
   }.bind(this));
@@ -345,12 +327,10 @@ App.prototype.createFakeDevice = function(profile) {
   /* Listen for events on this fake device, and notify the web interface. */
   this.fake.on('read', function(service, characteristic, offset){
     /* Notify our client we got a write request. */
-    //console.log('forward read to client');
     this.send('proxy_read', service, characteristic, offset);
   }.bind(this));
 
   this.fake.on('notify', function(service, characteristic, enable){
-    //console.log('forward notify to client');
     this.send('proxy_notify', service, characteristic, enable);
   }.bind(this));
 
@@ -390,14 +370,12 @@ App.prototype.disableBluetoothService = function(iface) {
   exec('service bluetooth status', function(error, stdout, stderr){
     if (stdout.indexOf(': active') >= 0) {
       /* Service is active, shut it down. */
-      //console.log('[i] Stopping BT service ...'.green);
       this.logger.info('Stopping BT service ...');
       exec('service bluetooth stop', function(error, stdout, stderr){
         setTimeout(function(){
           /* Re-enable our HCI interface. */
           if (iface == null)
             iface = 0;
-          //console.log(util.format('[i] Making sure interface hci%d is up ...', iface).green);
           this.logger.info('Making sure interface hci%d is up ...', iface);
           exec(util.format('hciconfig hci%d up', iface));
         }.bind(this), 2000);
