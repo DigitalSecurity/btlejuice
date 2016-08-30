@@ -45,6 +45,11 @@ var Interceptor = function(){
   /* Event manager. */
   this.listeners = {};
 
+  this.socket.on('app.status', function(status){
+    console.log('got status notif:' + status);
+    this.onStatusChange(status);
+  }.bind(this));
+
   /* Install handlers. */
   this.setup();
 
@@ -76,11 +81,6 @@ Interceptor.prototype.setup = function() {
 
   this.socket.on('data', function(s,c,d){
     this.onNotification(s,c,d);
-  }.bind(this));
-
-  this.socket.on('app.status', function(status){
-    console.log('got status notif');
-    this.onStatusChange(status);
   }.bind(this));
 
   this.socket.on('app.target', function(target){
@@ -546,6 +546,11 @@ Interceptor.prototype.listDevices = function(callback) {
  **/
 Interceptor.prototype.selectTarget = function(target, callback) {
   this.clear();
+
+  this.socket.on('app.status', function(status){
+    console.log('got status notif:' + status);
+    this.onStatusChange(status);
+  }.bind(this));
 
   this.socket.once('profile', function(profile){
     this.onProfileChange(profile);

@@ -317,10 +317,11 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
    $scope.onSelectClick = function(target){
      /* If a target has been selected, tell the interceptor to use it. */
      if ($scope.target != null) {
-       interceptor.selectTarget($scope.target.address, function(){
+      interceptor.selectTarget($scope.target.address, function(){
         $rootScope.$emit('target.connected', $scope.target);
-       });
-        $('#m_target').modal('hide');
+      });
+
+      $('#m_target').modal('hide');
      } else {
        /* Display an error. */
        $scope.error = true;
