@@ -1,9 +1,16 @@
 BtleJuice - Bluetooth Man in the Middle framework
 =================================================
 
-version 1.0.6
+version 1.1.0
 -------------
 
+* Added GATT handles duplication support (true-cloning feature that fixes bad behavior on Android)
+* Optimized reconnection through local GATT cache
+* Minor bugfixes
+
+
+version 1.0.6
+-------------
 
 * Added export feature (JSON and text)
 * Added support for auto-reconnection: when a remote device disconnects, the proxy will automatically reconnect
@@ -11,6 +18,7 @@ version 1.0.6
 * Fixed settings dialog
 * Improved bluetooth core
 * Fixed other minor bugs
+
 
 version 1.0.5 (initial release)
 -------------------------------
