@@ -1,6 +1,11 @@
 BtleJuice - Bluetooth Man in the Middle framework
 =================================================
 
+version 1.1.1
+-------------
+
+* Version numbers fixed in both btlejuice and btlejuice-proxy
+
 version 1.1.0
 -------------
 
