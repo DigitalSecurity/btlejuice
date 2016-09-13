@@ -200,7 +200,7 @@ Proxy.prototype.acquireTarget = function(config) {
     );
 
     /* Start scanning when ble device is ready. */
-    noble.startScanning();
+    noble.startScanning(null, true);
   }
 };
 
@@ -574,7 +574,7 @@ Proxy.prototype.scanDevices = function(){
   );
 
   this.state = 'scanning';
-  noble.startScanning();
+  noble.startScanning(null, true);
 };
 
 Proxy.prototype.stop = function(){

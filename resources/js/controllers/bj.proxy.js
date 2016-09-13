@@ -275,6 +275,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
  BjProxy.controller('TargetCtrl', function($scope, $rootScope){
 
    $scope.targets = [];
+   $scope.seen = {};
    $scope.error = false;
 
    $scope.target = null;
@@ -294,13 +295,16 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
    $rootScope.$on('target.select', function(){
      console.log('event target.select fired');
      interceptor.listDevices(function(peripheral, name, rssi){
-       console.log(peripheral);
-       $scope.targets.push({
-         address: peripheral,
-         name: (name!=undefined)?name:'<unknown>',
-         rssi: rssi
-       });
-       $scope.$apply();
+       console.log($scope.seen);
+       if (!(peripheral in $scope.seen)) {
+         $scope.targets.push({
+           address: peripheral,
+           name: (name!=undefined)?name:'<unknown>',
+           rssi: rssi
+         });
+         $scope.seen[peripheral] = null;
+         $scope.$apply();
+       }
      });
 
      /* Popup modal. */
@@ -312,6 +316,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
      console.log('event target.disconnect fired');
      interceptor.disconnect();
      $scope.targets = [];
+     $scope.seen = {};
    });
 
    $scope.onSelectClick = function(target){
