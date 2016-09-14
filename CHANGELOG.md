@@ -1,6 +1,11 @@
 BtleJuice - Bluetooth Man in the Middle framework
 =================================================
 
+version 1.1.2
+-------------
+
+* Improved device detection and acquisition (issue #2)
+
 version 1.1.1
 -------------
 
