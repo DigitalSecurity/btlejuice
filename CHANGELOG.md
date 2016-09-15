@@ -1,6 +1,12 @@
 BtleJuice - Bluetooth Man in the Middle framework
 =================================================
 
+version 1.1.3
+-------------
+
+* Fixed a bug introduced in the previous version (bad dedup)
+
+
 version 1.1.2
 -------------
 

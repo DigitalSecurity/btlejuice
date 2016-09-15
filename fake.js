@@ -368,7 +368,7 @@ FakeDevice.prototype.onRead = function(service, characteristic, offset, callback
   /* Install a callback to propagate the response. */
   this.once('read_resp', function(_service, _characteristic, _data){
     if ((_service == service) && (_characteristic == characteristic)) {
-      this.logger.debug('Read value: %s', _data);
+      //this.logger.debug('Read value: %s', _data);
       callback(this.RESULT_SUCCESS, _data);
     }
   }.bind(this));

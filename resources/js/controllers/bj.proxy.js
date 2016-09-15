@@ -294,8 +294,8 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
    console.log('register target selection');
    $rootScope.$on('target.select', function(){
      console.log('event target.select fired');
+
      interceptor.listDevices(function(peripheral, name, rssi){
-       console.log($scope.seen);
        if (!(peripheral in $scope.seen)) {
          $scope.targets.push({
            address: peripheral,
@@ -309,6 +309,7 @@ BjProxy.controller('NavCtrl', function($scope, $rootScope, $element){
 
      /* Popup modal. */
      $scope.targets = [];
+     $scope.seen = {};
      $('#m_target').modal();
    });
 

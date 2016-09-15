@@ -115,8 +115,10 @@ Proxy.prototype.start = function(){
 }
 
 Proxy.prototype.onClientDisconnect = function(){
-  console.log('[warning] client disconnected');
-  this.client = null;
+  if (this.client != null) {
+    console.log('[warning] client disconnected');
+    this.client = null;
+  }
 };
 
 Proxy.prototype.send = function() {
