@@ -75,7 +75,7 @@ $ sudo btlejuice-proxy
 
 On your host machine, don't forget to stop the bluetooth service and ensure the HCI device remains opened/initialized:
 ```
-$ sudo service bluetooth start
+$ sudo service bluetooth stop
 $ sudo hciconfig hci0 up
 ```
 
