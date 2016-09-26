@@ -36,6 +36,20 @@ args = parser.parseArgs();
 if (args.iface != null) {
   var iface = parseInt(args.iface);
 
+  /* Iface not a number, consider a string. */
+  if (isNaN(iface)) {
+    /* String has to be hciX */
+    var re = /^hci([0-9]+)$/i;
+    var result = re.exec(args.iface);
+    if (result != null) {
+        /* Keep the interface number. */
+        var iface = result[1];
+    } else {
+        console.log(util.format('[!] Unknown interface %s', args.iface).red);
+        process.exit(-1);
+    }
+  }
+
   /* Set up BLENO_HCI_DEVICE_ID. */
   process.env.NOBLE_HCI_DEVICE_ID = iface;
 } else {

@@ -31,7 +31,7 @@ var parser = new argparse.ArgumentParser({
   description: 'BtleJuice core & web interface'
 });
 parser.addArgument(['-i', '--iface'], {
-  help: 'Bluetooth interface to use for device emulation',
+  help: 'Bluetooth interface to use for device emulation (hciX or the interface number)',
 });
 parser.addArgument(['-u', '--proxy'], {
   help: 'Target BtleJuice proxy IP or hostname (default: localhost)',
@@ -90,6 +90,20 @@ if (args.web_port != null) {
 /* Define bluetooth interface. */
 if (args.iface != null) {
   var iface = parseInt(args.iface);
+
+  /* Iface not a number, consider a string. */
+  if (isNaN(iface)) {
+    /* String has to be hciX */
+    var re = /^hci([0-9]+)$/i;
+    var result = re.exec(args.iface);
+    if (result != null) {
+        /* Keep the interface number. */
+        var iface = result[1];
+    } else {
+        console.log(util.format('[!] Unknown interface %s', args.iface).red);
+        process.exit(-1);
+    }
+  }
 
   /* Set up BLENO_HCI_DEVICE_ID. */
   process.env.BLENO_HCI_DEVICE_ID = iface;
