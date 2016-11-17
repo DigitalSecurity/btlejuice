@@ -335,7 +335,7 @@ Proxy.prototype.connectDevice = function(peripheral) {
             console.log('[error] discovery timed out, stopping proxy.');
             this.watchdog = null;
             this.stop();
-          }.bind(this), 20000);
+          }.bind(this), 60000);
         }
 
         /* Connection OK, now discover services. */
