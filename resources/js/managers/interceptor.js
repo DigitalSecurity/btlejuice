@@ -24,7 +24,7 @@ var Interceptor = function(){
 
   /* Options. */
   this.shouldReconnect = true;
-  this.keepHandles = false;
+  this.keepHandles = true;
 
   /* Registered hooks. */
   this.hooks = {};
