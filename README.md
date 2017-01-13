@@ -16,7 +16,7 @@ How to install BtleJuice ?
 --------------------------
 
 Installing BtleJuice is a child's play. First of all, make sure your system uses
-a recent version of *Node.js* (>=4.3.2). Then, make sure to install all the
+a recent version of *Node.js* (>=4.3.2) and *npm*. Then, make sure to install all the
 required dependencies:
 
 ### Ubuntu/Debian/Raspbian
@@ -28,7 +28,7 @@ sudo apt-get install bluetooth bluez libbluetooth-dev libudev-dev
 ### Fedora / Other-RPM based
 
 ```
-sudo yum install bluez bluez-libs bluez-libs-devel
+sudo yum install bluez bluez-libs bluez-libs-devel npm
 ```
 
 Last, install BtleJuice using *npm*:
@@ -45,7 +45,8 @@ How to use BtleJuice ?
 
 BtleJuice is composed of two main components: an interception proxy and a core.
 These two components are required to run on independent machines in order to
-operate simultaneously two bluetooth 4.0+ adapters.
+operate simultaneously two bluetooth 4.0+ adapters. **BtleJuice Proxy does not work
+in a Docker container**.
 
 The use of a virtual machine may help to make this framework work on a single computer.
 
