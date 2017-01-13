@@ -246,17 +246,18 @@ App.prototype.onClientConnection = function(client) {
     this.proxy.emit('ble_notify', service, characteristic, enabled);
   }.bind(this));
 
+  /*
   client.on('data', function(service, characteristic, data){
-    this.logger.debug('Data notification for service %s and charac. %s (data)', s, c);
+    this.logger.debug('Forward data notification for service %s and charac. %s (data)', s, c);
     this.fake.emit('data', service, characteristic, data);
-  });
+});*/
 
   client.on('proxy_notify_resp', function(s,c, error) {
     this.fake.emit('notify_resp', s, c, error);
   }.bind(this));
 
   client.on('proxy_data', function(s,c,d){
-    this.logger.debug('Data notification for service %s and charac. %s (proxy_data)', s, c);
+    this.logger.debug('Forward data notification for service %s and charac. %s (proxy_data)', s, c);
     this.fake.emit('data', s,c,d);
   }.bind(this));
 
