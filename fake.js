@@ -216,7 +216,9 @@ var FakeDevice = function(profile, keepHandles) {
     if (uvCallback != null) {
       this.logger.info(('!! ['+service+':'+characteristic+']>> '+new Buffer(data).toString('hex')));
       uvCallback(data);
-    }
+  } else {
+      this.logger.info(('/!\\ Callback not found !').red);
+  }
 
   }.bind(this));
 
@@ -229,7 +231,6 @@ util.inherits(FakeDevice, events.EventEmitter);
  *
  * Fix bleno handles in order to avoid Gatt Cache issues.
  */
-
 FakeDevice.prototype.fixBlenoHandles = function(profile, services) {
   /* Target handles array. */
   var patchedHandles = [];
@@ -311,32 +312,54 @@ FakeDevice.prototype.fixBlenoHandles = function(profile, services) {
         value: characteristic.value
       };
 
+      /**
+       * Reorder descriptors to fit the structure expected by Bleno.
+       *
+       * Some descriptors may see their handles changed and it could cause
+       * some trouble for an Android GATT cache, but it is limited to
+       * notifications.
+       **/
+      var descriptorsHandles = [];
+      var descriptorsObjects = [];
+
+
+      /* First, split descriptor handles and objects. */
       for (var k = 0; k < characteristic.descriptors.length; k++) {
         var descriptor = characteristic.descriptors[k];
         var p_descriptor = services[i].characteristics[j].descriptors[k];
 
+        descriptorsHandles.push(descriptor.handle);
         if (descriptor.uuid == '2902') {
-          patchedHandles[descriptor.handle] = {
-            type: 'descriptor',
-            handle: descriptor.handle,
-            uuid: '2902',
-            attribute: p_characteristic,
-            properties: (0x02 | 0x04 | 0x08), // read/write
-            secure: (secure & 0x10) ? (0x02 | 0x04 | 0x08) : 0,
-            value: new Buffer([0x00, 0x00])
-          };
+            var descObject = {
+                type: 'descriptor',
+                handle: null,
+                uuid: '2902',
+                attribute: p_characteristic,
+                properties: (0x02 | 0x04 | 0x08), // read/write
+                secure: (secure & 0x10) ? (0x02 | 0x04 | 0x08) : 0,
+                value: new Buffer([0x00, 0x00])
+            };
+            descriptorsObjects.unshift(descObject);
         } else {
-          patchedHandles[descriptor.handle] = {
-            type: 'descriptor',
-            handle: descriptor.handle,
-            uuid: descriptor.uuid,
-            attribute: p_descriptor,
-            properties: 0x02, // read only
-            secure: 0x00,
-            value: descriptor.value
-          };
+            var descObject = {
+                type: 'descriptor',
+                handle: null,
+                uuid: descriptor.uuid,
+                attribute: p_descriptor,
+                properties: 0x02, // read only
+                secure: 0x00,
+                value: descriptor.value
+            };
+            descriptorsObjects.push(descObject);
         }
       }
+
+      /* Then re-associate handles. */
+      for (var k = 0; k < characteristic.descriptors.length; k++) {
+          descriptorsObjects[k].handle = descriptorsHandles[k];
+          patchedHandles[descriptorsHandles[k]] = descriptorsObjects[k];
+      }
+
     }
   }
 
