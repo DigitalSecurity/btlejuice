@@ -375,6 +375,7 @@ Proxy.prototype.connectDevice = function(peripheral) {
                         uuid: characs[c].uuid,
                         properties: characs[c].properties,
                         descriptors: [],
+
                         /* We read the handles from Noble's internal objects and save them. */
                         startHandle: noble._bindings._gatts[deviceUuid]._characteristics[serviceUuid][characs[c].uuid].startHandle,
                         valueHandle: noble._bindings._gatts[deviceUuid]._characteristics[serviceUuid][characs[c].uuid].valueHandle,
@@ -390,7 +391,7 @@ Proxy.prototype.connectDevice = function(peripheral) {
                               _charac.descriptors.push({
                                 'uuid': descriptors[desc].uuid,
                                 'handle': noble._bindings._gatts[deviceUuid]._descriptors[service][charac][descriptors[desc].uuid].handle,
-                                'value': (descriptors[desc].uuid == '2901')?new Buffer([0x00, 0x00]):null
+                                'value': (descriptors[desc].uuid == '2901')?new Buffer([]):null
                               });
                             }
                             t.onCharacteristicDiscovered(service, charac);
@@ -548,16 +549,22 @@ Proxy.prototype.setGattHandlers = function(){
   /* Install notify handler. */
   this.client.on('ble_notify', function(service, characteristic, enable){
     if (this.services != null) {
-      /* Register our automatic read handler. */
-      this.services[service][characteristic].removeAllListeners('data');
-      this.services[service][characteristic].on('data', function(data, isnotif)  {
-        this.send('ble_data', service, characteristic, data, isnotif);
-      }.bind(this));
+        /* Register our automatic read handler. */
+        this.services[service][characteristic].removeAllListeners('data');
+        this.services[service][characteristic].on('data', function(_this, _service, _charac){
+            return function(data, isnotif)  {
+                if (isnotif) {
+                    _this.send('ble_data', _service, _charac, data, isnotif);
+                }
+            };
+        }(this, service, characteristic));
 
-      /* Subscribe for notification. */
-      this.services[service][characteristic].notify(enable, function(error)  {
-        this.send('ble_notify_resp', service, characteristic, error);
-      }.bind(this));
+        /* Subscribe for notification. */
+        this.services[service][characteristic].notify(enable, function(_this, _service, _charac){
+            return function(error) {
+                _this.send('ble_notify_resp', service, characteristic, error);
+            };
+        }(this, service, characteristic));
     }
   }.bind(this));
 };
