@@ -18,7 +18,7 @@ const util = require('util');
  * Command-line tool
  **/
 var parser = new argparse.ArgumentParser({
-  version: '1.1.3',
+  version: '1.1.4',
   addHelp: true,
   description: 'BtleJuice proxy'
 });
