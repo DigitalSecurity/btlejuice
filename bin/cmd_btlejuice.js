@@ -17,6 +17,7 @@ var argparse = require('argparse');
 var BtleJuiceCore = require('../core');
 const colors = require('colors');
 const util = require('util');
+var btim = require('btim');
 
 /**
  * Release version
@@ -52,6 +53,11 @@ parser.addArgument(['-s', '--web-port'], {
   required: false,
   default: 8080
 });
+parser.addArgument(['-m', '--mac'], {
+  help: 'Spoof the MAC address with a new one',
+  required: false,
+});
+
 args = parser.parseArgs();
 
 console.log('   ___ _   _       __        _          ');
@@ -87,9 +93,11 @@ if (args.web_port != null) {
     var uiPort = 8080;
 }
 
+var iface; /* Globally defined to use it also for mac spoofing */
+
 /* Define bluetooth interface. */
 if (args.iface != null) {
-  var iface = parseInt(args.iface);
+  iface = parseInt(args.iface);
 
   /* Iface not a number, consider a string. */
   if (isNaN(iface)) {
@@ -99,6 +107,7 @@ if (args.iface != null) {
     if (result != null) {
         /* Keep the interface number. */
         var iface = result[1];
+        btim.up(parseInt(iface));
     } else {
         console.log(util.format('[!] Unknown interface %s', args.iface).red);
         process.exit(-1);
@@ -111,6 +120,25 @@ if (args.iface != null) {
   iface = 0;
 }
 console.log(util.format('[i] Using interface hci%d', iface).bold);
+
+if (args.mac != null && args.iface != null) {
+  var mac_regex = /^(([A-Fa-f0-9]{2}[:]){5}[A-Fa-f0-9]{2}[,]?)+$/;
+  if (mac_regex.test(args.mac)) {
+      iface = parseInt(iface);
+      if (btim.up(iface) != 0) {
+          console.log(util.format('[!] The interface wasn\'t brought up: %s', args.iface).red);
+	  process.exit(-1);
+      }
+      if (btim.spoof_mac(iface, args.mac) != 0) {
+          console.log(util.format('[!] The MAC address wasn\'t successfully spoofed: %s', args.mac).red);
+	  process.exit(-1);
+      }
+      console.log(util.format('[i] MAC address successfully spoofed: %s', args.mac).bold);
+  } else {
+      console.log(util.format('[!] The provided MAC address isn\t valid: %s', args.mac).red);
+      process.exit(-1);
+  }
+}
 
 /* Set advertisement interval to minimum value (20ms). */
 process.env.BLENO_ADVERTISING_INTERVAL = 20;
