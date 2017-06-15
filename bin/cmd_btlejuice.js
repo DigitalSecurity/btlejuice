@@ -127,11 +127,11 @@ if (args.mac != null && args.iface != null) {
       iface = parseInt(iface);
       if (btim.up(iface) != 0) {
           console.log(util.format('[!] The interface wasn\'t brought up: %s', args.iface).red);
-	  process.exit(-1);
+          process.exit(-1);
       }
       if (btim.spoof_mac(iface, args.mac) != 0) {
           console.log(util.format('[!] The MAC address wasn\'t successfully spoofed: %s', args.mac).red);
-	  process.exit(-1);
+          process.exit(-1);
       }
       console.log(util.format('[i] MAC address successfully spoofed: %s', args.mac).bold);
   } else {
