@@ -27,7 +27,7 @@ var btim = require('btim');
  * Command-line tool
  **/
 var parser = new argparse.ArgumentParser({
-  version: '1.1.4',
+  version: '1.1.5',
   addHelp: true,
   description: 'BtleJuice core & web interface'
 });

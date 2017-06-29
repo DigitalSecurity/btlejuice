@@ -342,7 +342,7 @@ Proxy.prototype.connectDevice = function(peripheral) {
         peripheral.discoverServices(null, function(error, services) {
           //console.log('services discovered');
           //console.log(services);
-          if (error == undefined) {
+          if (error == null) {
             for (var service in services) {
 
               this.services[services[service].uuid] = {};
@@ -381,7 +381,7 @@ Proxy.prototype.connectDevice = function(peripheral) {
                         valueHandle: noble._bindings._gatts[deviceUuid]._characteristics[serviceUuid][characs[c].uuid].valueHandle,
                         endHandle: noble._bindings._gatts[deviceUuid]._characteristics[serviceUuid][characs[c].uuid].endHandle
                       };
-                    this.discovered[serviceUuid].done = true;
+
                       characs[c].discoverDescriptors((function(t, service, charac){
                         return function(error, descriptors) {
                           if (error == undefined) {
@@ -401,6 +401,7 @@ Proxy.prototype.connectDevice = function(peripheral) {
                         }
                       })(this, serviceUuid, characs[c].uuid));
                     }
+                    this.discovered[serviceUuid].done = true;
                   } else {
                     console.log(('[error] cannot discover characteristic ' + charac).red)
                   }
