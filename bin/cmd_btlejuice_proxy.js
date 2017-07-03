@@ -13,12 +13,13 @@ var argparse = require('argparse');
 var proxy = require('../proxy');
 const colors = require('colors');
 const util = require('util');
+var btim = require('btim');
 
 /**
  * Command-line tool
  **/
 var parser = new argparse.ArgumentParser({
-  version: '1.1.5',
+  version: '1.1.6',
   addHelp: true,
   description: 'BtleJuice proxy'
 });
@@ -29,6 +30,16 @@ parser.addArgument(['-p', '--port'], {
   help: 'BtleJuice proxy port (default: 8000)',
   required: false,
 });
+// Add additional options if the module btim is present.
+if (btim != null) {
+  parser.addArgument(['-l', '--list'], {
+    help: 'List bluetooth interfaces',
+    required: false,
+    action: 'storeTrue',
+    default: false
+  });
+}
+
 args = parser.parseArgs();
 
 
@@ -44,6 +55,10 @@ if (args.iface != null) {
     if (result != null) {
         /* Keep the interface number. */
         var iface = result[1];
+        /* Bring up an interace only if the module btim is present. */
+        if (btim != null) {
+          btim.up(parseInt(iface));
+        }
     } else {
         console.log(util.format('[!] Unknown interface %s', args.iface).red);
         process.exit(-1);
@@ -65,6 +80,45 @@ if (args.port != null) {
   }
 } else {
   proxyPort = 8000;
+}
+
+// Add implemientation of additional options if the module btim is present.
+if (btim != null) {
+  if (args.list) {
+    function display_interface(item) {
+      for (property in item) {
+        console.log(util.format('%s\tType: %s  Bus: %s  BD Address: %s  ' +
+          'ACL MTU: %s  SCO MTU: %s\n\t%s\n\t' +
+          'RX: bytes: %s  ACL: %s  SCO: %s  events: %s  errors: %s\n\t' +
+          'TX: bytes: %s  ACL: %s  SCO: %s  events: %s  errors: %s\n',
+          property,
+          item[property]['type'],
+          item[property]['bus'],
+          item[property]['address'],
+          item[property]['acl_mtu'],
+          item[property]['sco_mtu'],
+          item[property]['status'],
+          item[property]['rx']['bytes'],
+          item[property]['rx']['acl'],
+          item[property]['rx']['sco'],
+          item[property]['rx']['events'],
+          item[property]['rx']['errors'],
+          item[property]['tx']['bytes'],
+          item[property]['tx']['acl'],
+          item[property]['tx']['sco'],
+          item[property]['tx']['events'],
+          item[property]['tx']['errors']).bold);
+      }
+    }
+
+    console.log(util.format('[info] Listing bluetooth interfaces...\n').green);
+    var interfaces = btim.list();
+
+    for (var i = 0; i < interfaces.length; i++) {
+      display_interface(interfaces[i]);
+    }
+    process.exit(0);
+  }
 }
 
 /* Create our core. */

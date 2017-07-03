@@ -27,7 +27,7 @@ var btim = require('btim');
  * Command-line tool
  **/
 var parser = new argparse.ArgumentParser({
-  version: '1.1.5',
+  version: '1.1.6',
   addHelp: true,
   description: 'BtleJuice core & web interface'
 });
@@ -53,16 +53,20 @@ parser.addArgument(['-s', '--web-port'], {
   required: false,
   default: 8080
 });
-parser.addArgument(['-m', '--mac'], {
-  help: 'Spoof the MAC address with a new one',
-  required: false,
-});
-parser.addArgument(['-l', '--list'], {
-  help: 'List bluetooth interfaces',
-  required: false,
-  action: 'storeTrue',
-  default: false
-});
+
+// Add additional options if the module btim is present.
+if (btim != null) {
+  parser.addArgument(['-m', '--mac'], {
+    help: 'Spoof the MAC address with a new one',
+    required: false,
+  });
+  parser.addArgument(['-l', '--list'], {
+    help: 'List bluetooth interfaces',
+    required: false,
+    action: 'storeTrue',
+    default: false
+  });
+}
 
 
 args = parser.parseArgs();
@@ -114,7 +118,10 @@ if (args.iface != null) {
     if (result != null) {
         /* Keep the interface number. */
         var iface = result[1];
-        btim.up(parseInt(iface));
+        /* Bring up an interace only if the module btim is present. */
+        if (btim != null) {
+          btim.up(parseInt(iface));
+        }
     } else {
         console.log(util.format('[!] Unknown interface %s', args.iface).red);
         process.exit(-1);
@@ -128,53 +135,57 @@ if (args.iface != null) {
 }
 console.log(util.format('[i] Using interface hci%d', iface).bold);
 
-if (args.mac != null && args.iface != null) {
-  var mac_regex = /^(([A-Fa-f0-9]{2}[:]){5}[A-Fa-f0-9]{2}[,]?)+$/;
-  if (mac_regex.test(args.mac)) {
+// Add implemientation of additional options if the module btim is present.
+if (btim != null) {
+  if (args.mac != null && args.iface != null) {
+    var mac_regex = /^(([A-Fa-f0-9]{2}[:]){5}[A-Fa-f0-9]{2}[,]?)+$/;
+    if (mac_regex.test(args.mac)) {
       iface = parseInt(iface);
-      if (btim.spoof_mac(iface, args.mac) != 0) {
+        if (btim.spoof_mac(iface, args.mac) != 0) {
           console.log(util.format('[!] The MAC address wasn\'t successfully spoofed: %s', args.mac).red);
           process.exit(-1);
-      }
-      console.log(util.format('[i] MAC address successfully spoofed: %s', args.mac).bold);
-  } else {
+        }
+        console.log(util.format('[i] MAC address successfully spoofed: %s', args.mac).bold);
+    } else {
       console.log(util.format('[!] The provided MAC address isn\t valid: %s', args.mac).red);
       process.exit(-1);
-  }
-}
-
-if (args.list) {
-  function display_interface(item) {
-    for (property in item) {
-      console.log(util.format('%s\tType: %s  Bus: %s  BD Address: %s  ' +
-      'ACL MTU: %s  SCO MTU: %s\n\t%s\n\t' +
-      'RX: bytes: %s  ACL: %s  SCO: %s  events: %s  errors: %s\n\t' +
-      'TX: bytes: %s  ACL: %s  SCO: %s  events: %s  errors: %s\n',
-      property,
-      item[property]['Type'],
-      item[property]['Bus'],
-      item[property]['BD Address'],
-      item[property]['ACL MTU'],
-      item[property]['SCO MTU'],
-      item[property]['status'],
-      item[property]['RX']['bytes'],
-      item[property]['RX']['ACL'],
-      item[property]['RX']['SCO'],
-      item[property]['RX']['events'],
-      item[property]['RX']['errors'],
-      item[property]['TX']['bytes'],
-      item[property]['TX']['ACL'],
-      item[property]['TX']['SCO'],
-      item[property]['TX']['events'],
-      item[property]['TX']['errors']).bold);
     }
   }
 
-  console.log(util.format('[info] Listing bluetooth interfaces...\n').green);
-  var interfaces = JSON.parse('[' + btim.list() + ']');
+  if (args.list) {
+    function display_interface(item) {
+      for (property in item) {
+        console.log(util.format('%s\tType: %s  Bus: %s  BD Address: %s  ' +
+          'ACL MTU: %s  SCO MTU: %s\n\t%s\n\t' +
+          'RX: bytes: %s  ACL: %s  SCO: %s  events: %s  errors: %s\n\t' +
+          'TX: bytes: %s  ACL: %s  SCO: %s  events: %s  errors: %s\n',
+          property,
+          item[property]['type'],
+          item[property]['bus'],
+          item[property]['address'],
+          item[property]['acl_mtu'],
+          item[property]['sco_mtu'],
+          item[property]['status'],
+          item[property]['rx']['bytes'],
+          item[property]['rx']['acl'],
+          item[property]['rx']['sco'],
+          item[property]['rx']['events'],
+          item[property]['rx']['errors'],
+          item[property]['tx']['bytes'],
+          item[property]['tx']['acl'],
+          item[property]['tx']['sco'],
+          item[property]['tx']['events'],
+          item[property]['tx']['errors']).bold);
+      }
+    }
 
-  for (var i = 0; i < interfaces.length; i++) {
-    display_interface(interfaces[i]);
+    console.log(util.format('[info] Listing bluetooth interfaces...\n').green);
+    var interfaces = btim.list();
+
+    for (var i = 0; i < interfaces.length; i++) {
+      display_interface(interfaces[i]);
+    }
+    process.exit(0);
   }
 }
 
