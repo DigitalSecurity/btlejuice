@@ -151,27 +151,27 @@ if (args.list) {
       'RX: bytes: %s  ACL: %s  SCO: %s  events: %s  errors: %s\n\t' +
       'TX: bytes: %s  ACL: %s  SCO: %s  events: %s  errors: %s\n',
       property,
-      item[property]['Type'],
-      item[property]['Bus'],
-      item[property]['BD Address'],
-      item[property]['ACL MTU'],
-      item[property]['SCO MTU'],
+      item[property]['type'],
+      item[property]['bus'],
+      item[property]['address'],
+      item[property]['acl_mtu'],
+      item[property]['sco_mtu'],
       item[property]['status'],
-      item[property]['RX']['bytes'],
-      item[property]['RX']['ACL'],
-      item[property]['RX']['SCO'],
-      item[property]['RX']['events'],
-      item[property]['RX']['errors'],
-      item[property]['TX']['bytes'],
-      item[property]['TX']['ACL'],
-      item[property]['TX']['SCO'],
-      item[property]['TX']['events'],
-      item[property]['TX']['errors']).bold);
+      item[property]['rx']['bytes'],
+      item[property]['rx']['acl'],
+      item[property]['rx']['sco'],
+      item[property]['rx']['events'],
+      item[property]['rx']['errors'],
+      item[property]['tx']['bytes'],
+      item[property]['tx']['acl'],
+      item[property]['tx']['sco'],
+      item[property]['tx']['events'],
+      item[property]['tx']['errors']).bold);
     }
   }
 
   console.log(util.format('[info] Listing bluetooth interfaces...\n').green);
-  var interfaces = JSON.parse('[' + btim.list() + ']');
+  var interfaces = btim.list();
 
   for (var i = 0; i < interfaces.length; i++) {
     display_interface(interfaces[i]);
