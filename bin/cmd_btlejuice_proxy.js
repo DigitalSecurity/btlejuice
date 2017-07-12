@@ -10,16 +10,17 @@
  **/
 
 var argparse = require('argparse');
+var optional = require('optional');
 var proxy = require('../proxy');
 const colors = require('colors');
 const util = require('util');
-var btim = require('btim');
+var btim = optional('btim');
 
 /**
  * Command-line tool
  **/
 var parser = new argparse.ArgumentParser({
-  version: '1.1.6',
+  version: '1.1.7',
   addHelp: true,
   description: 'BtleJuice proxy'
 });
@@ -30,7 +31,8 @@ parser.addArgument(['-p', '--port'], {
   help: 'BtleJuice proxy port (default: 8000)',
   required: false,
 });
-// Add additional options if the module btim is present.
+
+/* Add additional options if the module btim is present. */
 if (btim != null) {
   parser.addArgument(['-l', '--list'], {
     help: 'List bluetooth interfaces',
@@ -82,7 +84,7 @@ if (args.port != null) {
   proxyPort = 8000;
 }
 
-// Add implemientation of additional options if the module btim is present.
+/* Add implementation of additional options if the module btim is present. */
 if (btim != null) {
   if (args.list) {
     function display_interface(item) {
