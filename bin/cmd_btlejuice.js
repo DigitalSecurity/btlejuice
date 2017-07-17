@@ -13,11 +13,12 @@
  *  -s <web port>   Web UI port
  **/
 
+var optional = require('optional');
 var argparse = require('argparse');
 var BtleJuiceCore = require('../core');
 const colors = require('colors');
 const util = require('util');
-var btim = require('btim');
+var btim = optional('btim');
 
 /**
  * Release version
@@ -27,7 +28,7 @@ var btim = require('btim');
  * Command-line tool
  **/
 var parser = new argparse.ArgumentParser({
-  version: '1.1.6',
+  version: '1.1.7',
   addHelp: true,
   description: 'BtleJuice core & web interface'
 });
@@ -54,7 +55,7 @@ parser.addArgument(['-s', '--web-port'], {
   default: 8080
 });
 
-// Add additional options if the module btim is present.
+/* Add additional options if the module btim is present. */
 if (btim != null) {
   parser.addArgument(['-m', '--mac'], {
     help: 'Spoof the MAC address with a new one',
@@ -106,36 +107,8 @@ if (args.web_port != null) {
 
 var iface; /* Globally defined to use it also for mac spoofing */
 
-/* Define bluetooth interface. */
-if (args.iface != null) {
-  iface = parseInt(args.iface);
 
-  /* Iface not a number, consider a string. */
-  if (isNaN(iface)) {
-    /* String has to be hciX */
-    var re = /^hci([0-9]+)$/i;
-    var result = re.exec(args.iface);
-    if (result != null) {
-        /* Keep the interface number. */
-        var iface = result[1];
-        /* Bring up an interace only if the module btim is present. */
-        if (btim != null) {
-          btim.up(parseInt(iface));
-        }
-    } else {
-        console.log(util.format('[!] Unknown interface %s', args.iface).red);
-        process.exit(-1);
-    }
-  }
-
-  /* Set up BLENO_HCI_DEVICE_ID. */
-  process.env.BLENO_HCI_DEVICE_ID = iface;
-} else {
-  iface = 0;
-}
-console.log(util.format('[i] Using interface hci%d', iface).bold);
-
-// Add implemientation of additional options if the module btim is present.
+// Add implementation of additional options if the module btim is present.
 if (btim != null) {
   if (args.mac != null && args.iface != null) {
     var mac_regex = /^(([A-Fa-f0-9]{2}[:]){5}[A-Fa-f0-9]{2}[,]?)+$/;
@@ -181,6 +154,7 @@ if (btim != null) {
 
     console.log(util.format('[info] Listing bluetooth interfaces...\n').green);
     var interfaces = btim.list();
+    console.log(interfaces);
 
     for (var i = 0; i < interfaces.length; i++) {
       display_interface(interfaces[i]);
@@ -188,6 +162,35 @@ if (btim != null) {
     process.exit(0);
   }
 }
+
+/* Define bluetooth interface. */
+if (args.iface != null) {
+  iface = parseInt(args.iface);
+
+  /* Iface not a number, consider a string. */
+  if (isNaN(iface)) {
+    /* String has to be hciX */
+    var re = /^hci([0-9]+)$/i;
+    var result = re.exec(args.iface);
+    if (result != null) {
+        /* Keep the interface number. */
+        var iface = result[1];
+        /* Bring up an interace only if the module btim is present. */
+        if (btim != null) {
+          btim.up(parseInt(iface));
+        }
+    } else {
+        console.log(util.format('[!] Unknown interface %s', args.iface).red);
+        process.exit(-1);
+    }
+  }
+
+  /* Set up BLENO_HCI_DEVICE_ID. */
+  process.env.BLENO_HCI_DEVICE_ID = iface;
+} else {
+  iface = 0;
+}
+console.log(util.format('[i] Using interface hci%d', iface).bold);
 
 /* Set advertisement interval to minimum value (20ms). */
 process.env.BLENO_ADVERTISING_INTERVAL = 20;
