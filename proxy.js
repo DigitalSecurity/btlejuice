@@ -249,6 +249,69 @@ Proxy.prototype.isAllDiscovered = function() {
   var handle = noble._bindings._handles[bdaddr];
   var gatt = noble._bindings._gatts[handle];
 
+  /* Patching longWrite(). */
+  gatt.longWrite = function(serviceUuid, characteristicUuid, data, withoutResponse) {
+    var characteristic = this._characteristics[serviceUuid][characteristicUuid];
+    var limit = this._mtu - 5;
+
+    var prepareWriteCallback = function(data_chunk) {
+      return function(resp) {
+        var opcode = resp[0];
+
+        if (opcode != ATT_OP_PREPARE_WRITE_RESP) {
+          debug(this._address + ': unexpected reply opcode %d (expecting ATT_OP_PREPARE_WRITE_RESP)', opcode);
+        } else {
+          var expected_length = data_chunk.length + 5;
+
+          if (resp.length !== expected_length) {
+            /* the response should contain the data packet echoed back to the caller */
+            debug(this._address + ': unexpected prepareWriteResponse length %d (expecting %d)', resp.length, expected_length);
+          }
+        }
+      }.bind(this);
+    }.bind(this);
+
+    /* split into prepare-write chunks and queue them */
+    var offset = 0;
+
+    while (offset < data.length) {
+      var end = offset+limit;
+      var chunk = data.slice(offset, end);
+      this._queueCommand(this.prepareWriteRequest(characteristic.valueHandle, offset, chunk),
+        prepareWriteCallback(chunk));
+      offset = end;
+    }
+
+    /* queue the execute command with a callback to emit the write signal when done */
+    this._queueCommand(this.executeWriteRequest(characteristic.valueHandle), function(resp) {
+      var opcode = resp[0];
+
+      if (opcode === ATT_OP_EXECUTE_WRITE_RESP && !withoutResponse) {
+        this.emit('write', this._address, serviceUuid, characteristicUuid);
+      }
+    }.bind(this));
+  };
+
+  /* Patching write() to support longWrite mode. */
+  gatt.write = function(serviceUuid, characteristicUuid, data, withoutResponse) {
+    var characteristic = this._characteristics[serviceUuid][characteristicUuid];
+
+    if (withoutResponse) {
+        this._queueCommand(this.writeRequest(characteristic.valueHandle, data, true), null, function() {
+        this.emit('write', this._address, serviceUuid, characteristicUuid);
+      }.bind(this));
+    } else if (data.length + 3 > this._mtu) {
+      return this.longWrite(serviceUuid, characteristicUuid, data, withoutResponse);
+    } else {
+    this._queueCommand(this.writeRequest(characteristic.valueHandle, data, false), function(data) {
+        var opcode = data[0];
+        if (opcode === ATT_OP_WRITE_RESP) {
+          this.emit('write', this._address, serviceUuid, characteristicUuid);
+        }
+      }.bind(this));
+    }
+  };
+
   this.devices[this.target].cache = {
     peripheral: this.device,  /* Noble peripheral object. */
     services: gatt._services, /* GATT services. */
