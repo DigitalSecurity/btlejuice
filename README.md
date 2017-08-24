@@ -60,13 +60,8 @@ hci0:	Type: BR/EDR  Bus: USB
 	RX bytes:1433 acl:0 sco:0 events:171 errors:0
 	TX bytes:30206 acl:0 sco:0 commands:170 errors:0
 ```
-Then ensure that service bluetooth is started and open/initialize the HCI device:
-```
-$ sudo service bluetooth start
-$ sudo hciconfig hci0 up
-```
 
-Also make sure your virtual machine has an IP address reachable from the host.
+Then, make sure your virtual machine has an IP address reachable from the host.
 
 Launch the proxy in your virtual machine:
 
