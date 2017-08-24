@@ -59,6 +59,7 @@ hci0:	Type: BR/EDR  Bus: USB
 	DOWN
 	RX bytes:1433 acl:0 sco:0 events:171 errors:0
 	TX bytes:30206 acl:0 sco:0 commands:170 errors:0
+$ sudo hiconcig hci0 up
 ```
 
 Then, make sure your virtual machine has an IP address reachable from the host.
