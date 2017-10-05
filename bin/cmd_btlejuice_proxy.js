@@ -20,7 +20,7 @@ var btim = optional('btim');
  * Command-line tool
  **/
 var parser = new argparse.ArgumentParser({
-  version: '1.1.9',
+  version: '1.1.10',
   addHelp: true,
   description: 'BtleJuice proxy'
 });

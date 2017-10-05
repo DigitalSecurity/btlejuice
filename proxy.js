@@ -35,6 +35,12 @@ var util = require('util');
 var colors = require('colors');
 var server = require('socket.io');
 
+/* Missing constants. */
+var ATT_OP_WRITE_RESP               = 0x13;
+var ATT_OP_PREPARE_WRITE_REQ        = 0x16;
+var ATT_OP_EXECUTE_WRITE_RESP       = 0x19;
+
+
 var Proxy = function(options){
 
   /* Profiling related properties. */
@@ -305,7 +311,7 @@ Proxy.prototype.isAllDiscovered = function() {
     } else {
     this._queueCommand(this.writeRequest(characteristic.valueHandle, data, false), function(data) {
         var opcode = data[0];
-        if (opcode === ATT_OP_WRITE_RESP) {
+        if (opcode === ATT_OP_WRITE_RESP*/) {
           this.emit('write', this._address, serviceUuid, characteristicUuid);
         }
       }.bind(this));
