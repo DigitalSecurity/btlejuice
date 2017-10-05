@@ -311,7 +311,7 @@ Proxy.prototype.isAllDiscovered = function() {
     } else {
     this._queueCommand(this.writeRequest(characteristic.valueHandle, data, false), function(data) {
         var opcode = data[0];
-        if (opcode === ATT_OP_WRITE_RESP*/) {
+        if (opcode === ATT_OP_WRITE_RESP) {
           this.emit('write', this._address, serviceUuid, characteristicUuid);
         }
       }.bind(this));
