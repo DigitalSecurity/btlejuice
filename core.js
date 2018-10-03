@@ -218,11 +218,11 @@ App.prototype.onClientConnection = function(client) {
   /**
    * Forward write message to proxy.
    **/
-  client.on('ble_write', function(service, characteristic, data){
+  client.on('ble_write', function(service, characteristic, data, offset, withoutResponse){
     this.proxy.once('ble_write_resp', function(s,c, error){
       client.emit('ble_write_resp', service, characteristic, error);
     }.bind(this));
-    this.proxy.emit('ble_write', service, characteristic, data, false)
+    this.proxy.emit('ble_write', service, characteristic, data, withoutResponse)
   }.bind(this));
 
   /**
