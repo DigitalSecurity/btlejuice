@@ -114,7 +114,7 @@ var FakeDevice = function(profile, keepHandles) {
 
 
       /* Install characteristic notify callback if required. */
-      if (service_char_item['properties'].indexOf('notify') > -1) {
+      if ((service_char_item['properties'].indexOf('notify') > -1) || (service_char_item['properties'].indexOf('indicate') > -1)) {
         service_char_item['onSubscribe'] = (function(_this, service, characteristic){
           return function(maxValueSize, updateValueCallback){
             _this.onSubscribe(service, characteristic, maxValueSize, updateValueCallback);
